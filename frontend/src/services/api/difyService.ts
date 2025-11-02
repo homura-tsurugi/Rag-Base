@@ -90,12 +90,26 @@ export const sendMessage = async (
   request: ChatMessageRequest
 ): Promise<ChatMessageResponse> => {
   try {
+    console.log('📤 Dify API リクエスト送信:', {
+      url: `${DIFY_API_URL}/chat-messages`,
+      user_id: request.user_id,
+      session_id: request.session_id,
+      content: request.content.substring(0, 50) + '...',
+    });
+
     const response = await difyClient.post('/chat-messages', {
       inputs: {},
       query: request.content,
       user: request.user_id,
       conversation_id: request.session_id || undefined,
       response_mode: 'blocking', // ストリーミングではなく一括応答
+    });
+
+    console.log('📥 Dify API レスポンス受信:', {
+      status: response.status,
+      conversation_id: response.data.conversation_id,
+      message_id: response.data.message_id,
+      answer_preview: response.data.answer?.substring(0, 50) + '...',
     });
 
     const data = response.data;

@@ -2,11 +2,11 @@
 
 ## 1. 基本情報
 
-- **ステータス**: フロントエンド実装完了 + プロジェクトクリーンアップ完了
-- **完了タスク数**: 6/12
-- **進捗率**: 50%
-- **次のマイルストーン**: Dify Cloud設定 + API接続テスト（Week 1）
-- **最終更新日**: 2025-11-02（完全自律モード実行完了 #2）
+- **ステータス**: Dify API連携問題解決 + E2Eテスト実装完了（Login Page）
+- **完了タスク数**: 8/12
+- **進捗率**: 67%
+- **次のマイルストーン**: Dify Cloud設定完了 + Chat/ConversationHistory実装完了（Week 1-2）
+- **最終更新日**: 2025-11-02 23:30（深夜自律モード実行）
 
 ## 2. MVP開発スケジュール（4週間）
 
@@ -43,11 +43,11 @@
 
 ### 3.1 カスタムUI実装（クライアント向け・スマホ対応）
 
-| ID | ページ名 | ルート | 権限レベル | 統合機能 | 着手 | 完了 |
-|----|---------|-------|----------|---------|------|------|
-| D-001 | ログイン | `/login` | 公開 | 認証 | [×] | [×] |
-| D-002 | AIチャット | `/chat` | クライアント | システムRAG + ユーザーRAG統合検索、会話履歴自動保存 | [×] | [×] |
-| D-003 | 会話履歴 | `/logs` | クライアント | 自分の過去会話確認、セッション管理 | [×] | [×] |
+| ID | ページ名 | ルート | 権限レベル | 統合機能 | 着手 | 完了 | E2Eテスト |
+|----|---------|-------|----------|---------|------|------|----------|
+| D-001 | ログイン | `/login` | 公開 | 認証 | [○] | [○] | ✅ 18/19件成功 |
+| D-002 | AIチャット | `/chat` | クライアント | システムRAG + ユーザーRAG統合検索、会話履歴自動保存 | [○] | [△] | ⏳ 8件実装（実装未完了） |
+| D-003 | 会話履歴 | `/logs` | クライアント | 自分の過去会話確認、セッション管理 | [○] | [△] | ⏳ 8件実装（実装未完了） |
 
 ### 3.2 Dify標準UI使用（コーチ向け管理・PC想定）
 
@@ -122,6 +122,59 @@
 ## 7. 更新履歴
 
 ```yaml
+2025-11-02 23:30（深夜自律モード実行 #3 - Dify API連携問題解決）:
+  【重要な問題解決: Dify API連携】
+  - 問題: 3つのページが直接mockChatServiceをインポートしていた
+    - /frontend/src/pages/protected/ChatPage.tsx
+    - /frontend/src/pages/ChatPage/index.tsx
+    - /frontend/src/pages/ConversationHistoryPage/index.tsx
+  - 解決策: 全ページでchatService経由でDify APIを使用するように修正
+  - 結果: ビルド成功、TypeScriptエラー0件
+
+  【デバッグ強化】
+  - difyService.tsにリクエスト/レスポンスログ追加
+  - API接続テストスクリプト作成（test-dify-api.cjs）
+  - Dify API動作確認完了（Status 200 OK、Claude応答確認）
+
+  【ドキュメント作成】
+  - DIFY_API_DIAGNOSIS.md: 問題診断・解決手順の完全記録
+  - E2E_TEST_RESULTS.md: E2Eテスト結果詳細レポート
+
+  【次のステップ】
+  - ブラウザでDify API連携の最終確認
+  - Chat/ConversationHistoryページのDify API統合完了
+  - 全E2Eテストの成功
+
+2025-11-02（E2Eテスト環境構築）:
+  【Playwright E2Eテスト実装完了】
+  - Playwright v1.56.1インストール・設定完了
+  - playwright.config.ts作成（Chromium, WebKit, Mobile Safari, Mobile Chrome対応）
+  - Login Page E2Eテスト実装: 19件（18件成功、1件スキップ）
+    - 認証フロー: コーチ→/admin、クライアント→/chat ✅
+    - エラーハンドリング: 不正メール/パスワード ✅
+    - セキュリティ: XSS対策、パスワードマスク ✅
+    - レスポンシブ: デスクトップ、iPhone、Android ✅
+    - アクセシビリティ: キーボード操作 ✅
+  - Chat Page E2Eテスト実装: 8件（ページ実装未完了のため失敗）
+  - Conversation History Page E2Eテスト実装: 8件（ページ実装未完了のため失敗）
+  - テスト結果サマリー作成: E2E_TEST_RESULTS.md
+  - package.jsonにテストスクリプト追加:
+    - npm run test:e2e
+    - npm run test:e2e:ui
+    - npm run test:e2e:debug
+
+  【成果物】
+  - /frontend/playwright.config.ts
+  - /frontend/tests/e2e/login.spec.ts（19テストケース）
+  - /frontend/tests/e2e/chat.spec.ts（8テストケース）
+  - /frontend/tests/e2e/conversation-history.spec.ts（8テストケース）
+  - /frontend/E2E_TEST_RESULTS.md（詳細レポート）
+
+  【次のアクション】
+  - ChatPageとConversationHistoryPageの実装完了を待つ
+  - 実装完了後、テストを再実行して調整
+  - 全テストが成功したら、CI/CD統合を進める
+
 2025-11-02（完全自律モード実行 #2）:
   【フェーズ5: プロジェクトクリーンアップ完了】
   - 重複ページ削除（AdminConversationHistoryPage.html → AdminDashboard tab 3で代替）

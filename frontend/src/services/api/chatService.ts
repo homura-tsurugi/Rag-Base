@@ -3,14 +3,15 @@
 // ============================================
 // 環境変数に基づいてモック/実API を切り替え
 
-import {
-  mockSendMessage,
-  mockGetConversations,
-  mockGetMessages,
-  mockCreateConversation,
-  mockDeleteConversation,
-  groupConversationsByDate as mockGroupConversationsByDate,
-} from './mockChatService';
+// Mock imports (currently unused, kept for future development)
+// import {
+//   mockSendMessage,
+//   mockGetConversations,
+//   mockGetMessages,
+//   mockCreateConversation,
+//   mockDeleteConversation,
+//   groupConversationsByDate as mockGroupConversationsByDate,
+// } from './mockChatService';
 
 import {
   sendMessage as difySendMessage,
@@ -21,26 +22,20 @@ import {
   groupConversationsByDate as difyGroupConversationsByDate,
 } from './difyService';
 
-// 環境変数でモード切り替え
-const USE_MOCK_API = import.meta.env.VITE_USE_MOCK_API === 'true';
+// 環境変数でモード切り替え（デバッグ用に強制的にfalseに設定）
+const USE_MOCK_API = false; // 強制的にDify APIを使用
 
 console.log(
   `🔌 チャットサービスモード: ${USE_MOCK_API ? 'モック（開発）' : 'Dify API（本番）'}`
 );
 
 // --------------------------------------------
-// エクスポート（環境に応じて切り替え）
+// エクスポート（強制的にDify APIを使用）
 // --------------------------------------------
 
-export const sendMessage = USE_MOCK_API ? mockSendMessage : difySendMessage;
-export const getConversations = USE_MOCK_API ? mockGetConversations : difyGetConversations;
-export const getMessages = USE_MOCK_API ? mockGetMessages : difyGetMessages;
-export const createConversation = USE_MOCK_API
-  ? mockCreateConversation
-  : difyCreateConversation;
-export const deleteConversation = USE_MOCK_API
-  ? mockDeleteConversation
-  : difyDeleteConversation;
-export const groupConversationsByDate = USE_MOCK_API
-  ? mockGroupConversationsByDate
-  : difyGroupConversationsByDate;
+export const sendMessage = difySendMessage;
+export const getConversations = difyGetConversations;
+export const getMessages = difyGetMessages;
+export const createConversation = difyCreateConversation;
+export const deleteConversation = difyDeleteConversation;
+export const groupConversationsByDate = difyGroupConversationsByDate;

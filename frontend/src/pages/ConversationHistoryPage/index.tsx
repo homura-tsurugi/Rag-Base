@@ -36,12 +36,12 @@ import { useAuth } from '@/contexts/AuthContext';
 // Types
 import type { Conversation } from '@/types';
 
-// Mock Service
+// Chat Service
 import {
-  mockGetConversations,
-  mockDeleteConversation,
+  getConversations,
+  deleteConversation,
   groupConversationsByDate,
-} from '@/services/api/mockChatService';
+} from '@/services/api/chatService';
 
 // --------------------------------------------
 // アイコンマッピング（タイトルからアイコンを推測）
@@ -126,7 +126,7 @@ export const ConversationHistoryPage = () => {
     if (!user) return;
     try {
       setLoading(true);
-      const convs = await mockGetConversations(user.user_id);
+      const convs = await getConversations(user.user_id);
       setConversations(convs);
       setError(null);
     } catch (err) {
@@ -174,7 +174,7 @@ export const ConversationHistoryPage = () => {
 
     try {
       setDeleting(true);
-      await mockDeleteConversation(selectedSessionId);
+      await deleteConversation(selectedSessionId);
       // ローカル状態から削除
       setConversations((prev) => prev.filter((conv) => conv.session_id !== selectedSessionId));
       handleCloseDeleteModal();

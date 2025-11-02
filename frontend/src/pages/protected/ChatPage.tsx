@@ -46,12 +46,12 @@ import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Message, Conversation, Citation, AIMode } from '@/types';
 import {
-  mockSendMessage,
-  mockGetConversations,
-  mockGetMessages,
-  mockCreateConversation,
+  sendMessage,
+  getConversations,
+  getMessages,
+  createConversation,
   groupConversationsByDate,
-} from '@/services/api/mockChatService';
+} from '@/services/api/chatService';
 
 // --------------------------------------------
 // モード定義
@@ -178,7 +178,7 @@ export const ChatPage = () => {
   const loadConversations = async () => {
     if (!user) return;
     try {
-      const convs = await mockGetConversations(user.user_id);
+      const convs = await getConversations(user.user_id);
       setConversations(convs);
     } catch (error) {
       console.error('会話履歴の取得に失敗:', error);
@@ -223,9 +223,10 @@ export const ChatPage = () => {
     setIsTyping(true);
 
     try {
-      const response = await mockSendMessage({
+      const response = await sendMessage({
         session_id: currentSessionId || undefined,
         content: messageContent,
+        user_id: user.user_id,
       });
 
       // セッションIDを更新（新規会話の場合）
@@ -283,7 +284,7 @@ export const ChatPage = () => {
     }
 
     try {
-      const newConv = await mockCreateConversation(user.user_id);
+      const newConv = await createConversation(user.user_id);
       setCurrentSessionId(newConv.session_id);
       setMessages([]);
       await loadConversations();
@@ -298,7 +299,7 @@ export const ChatPage = () => {
 
   const handleLoadConversation = async (sessionId: string) => {
     try {
-      const msgs = await mockGetMessages(sessionId);
+      const msgs = await getMessages(sessionId);
       setMessages(msgs);
       setCurrentSessionId(sessionId);
       setSidebarOpen(false);
