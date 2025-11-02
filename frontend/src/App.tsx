@@ -7,10 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { LoginPage } from '@/pages/public/LoginPage';
 import { ChatPage } from '@/pages/ChatPage/index';
 import { ConversationHistoryPage } from '@/pages/ConversationHistoryPage/index';
-import { DashboardPage } from '@/pages/DashboardPage';
-import { ProfilePage } from '@/pages/ProfilePage';
 import { AdminDashboardPage } from '@/pages/AdminDashboardPage/index';
-import { AdminConversationHistoryPage } from '@/pages/AdminConversationHistoryPage/index';
 import { Box, CircularProgress } from '@mui/material';
 import type { ReactNode } from 'react';
 
@@ -50,8 +47,8 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 const RoleBasedRedirect = () => {
   const { user } = useAuth();
 
-  // コーチ → ダッシュボード、クライアント → AIチャット
-  const redirectPath = user?.role === 'coach' ? '/dashboard' : '/chat';
+  // コーチ → 管理ダッシュボード、クライアント → AIチャット
+  const redirectPath = user?.role === 'coach' ? '/admin' : '/chat';
 
   return <Navigate to={redirectPath} replace />;
 };
@@ -86,37 +83,10 @@ function App() {
       />
 
       <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <DashboardPage />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/profile"
-        element={
-          <ProtectedRoute>
-            <ProfilePage />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
         path="/admin"
         element={
           <ProtectedRoute>
             <AdminDashboardPage />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/admin/logs"
-        element={
-          <ProtectedRoute>
-            <AdminConversationHistoryPage />
           </ProtectedRoute>
         }
       />

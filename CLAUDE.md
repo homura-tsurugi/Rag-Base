@@ -385,6 +385,7 @@ Whisper:
 ## 📝 作業ログ（最新10件）
 
 ```yaml
+- 2025-11-02: D-008 ワークフロー編集ページ実装完了（WorkflowEditorPage + mockWorkflowService、3エンドポイント）
 - 2025-11-02: ChatPageビルドエラー解消（MUI v7 Grid API対応: item prop削除、size prop使用）
 - 2025-11-02: MUIテーマ実装完了（Mental-Base準拠、MUI v7対応）
 - 2025-11-02: MUI v7破壊的変更対応（TypographyOptions型廃止対応）
@@ -394,7 +395,6 @@ Whisper:
 - 2025-11-02: CLAUDE.md作成完了
 - 2025-11-02: UI/UX要件追加（クライアント: スマホ必須、コーチ: PC想定）
 - 2025-11-02: 要件定義フェーズ完了（Step#1〜Step#10）
-- [次回以降の作業を記録]
 ```
 
 ## 🔧 開発環境セットアップ手順

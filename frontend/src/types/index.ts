@@ -88,6 +88,7 @@ export interface Message {
 export interface ChatMessageRequest {
   session_id?: string; // 新規会話の場合は省略
   content: string;
+  user_id?: string; // ユーザーID
 }
 
 // チャットメッセージレスポンス
@@ -262,11 +263,71 @@ export interface SystemStats {
   total_users: number;
   total_conversations: number;
   total_messages: number;
+  active_users_today: number;
   api_usage: {
     claude_tokens: number;
     openai_tokens: number;
   };
   uptime: number; // 秒
+  knowledge_bases: {
+    system_rag_documents: number;
+    user_rag_documents: number;
+  };
+}
+
+// 管理画面用：クライアント情報（拡張版）
+export interface ClientInfo {
+  user_id: string;
+  name: string;
+  email: string;
+  last_login_at?: string;
+  created_at: string;
+  total_conversations: number;
+  total_messages: number;
+  crisis_flags: number; // 危機フラグ数
+}
+
+// --------------------------------------------
+// プロンプト編集関連（D-007）
+// --------------------------------------------
+
+export interface Prompt {
+  app_id: string; // UUID
+  content: string; // プロンプトテキスト
+  version: string; // バージョン番号（例: "1.3"）
+  comment?: string; // バージョンコメント
+  created_at: string; // ISO 8601
+  updated_at?: string; // ISO 8601
+  is_active: boolean; // 現在アクティブか
+}
+
+export interface PromptVersion {
+  version_id: string; // UUID
+  app_id: string;
+  version: string; // バージョン番号
+  content: string; // プロンプトテキスト
+  comment: string; // 変更内容の説明
+  created_at: string; // ISO 8601
+}
+
+export interface ABTestConfig {
+  enabled: boolean;
+  prompt_a_version: string; // バージョン番号
+  prompt_b_version: string; // バージョン番号
+  distribution_ratio_a: number; // 0-100（%）
+  distribution_ratio_b: number; // 0-100（%）
+}
+
+export interface PromptTestRequest {
+  app_id: string;
+  prompt_content: string; // テスト用プロンプト
+  test_message: string; // テストメッセージ
+}
+
+export interface PromptTestResponse {
+  response: string; // AI応答
+  citations?: Citation[]; // 引用元情報
+  tokens_used?: number; // 使用トークン数
 }
 
 // --------------------------------------------
@@ -340,6 +401,111 @@ export interface CompassTask {
 }
 
 // --------------------------------------------
+// ワークフロー関連（D-008）
+// --------------------------------------------
+
+export type NodeType =
+  | 'user_input'
+  | 'system_rag_search'
+  | 'user_rag_search'
+  | 'llm_call'
+  | 'condition'
+  | 'crisis_detector'
+  | 'response'
+  | 'coach_notification';
+
+export interface NodePosition {
+  x: number;
+  y: number;
+}
+
+export interface CrisisDetectorConfig {
+  keywords: string[]; // 危機キーワードリスト
+  match_type: 'exact' | 'partial' | 'fuzzy'; // 検出方法
+  case_sensitive: boolean; // 大文字小文字の区別
+  output_variable: string; // 出力変数名
+}
+
+export interface RAGSearchConfig {
+  top_k: number; // 検索結果数
+  output_variable: string; // 出力変数名
+}
+
+export interface LLMCallConfig {
+  model: string; // モデル名（例: "Claude 3.5 Haiku"）
+  temperature: number; // 温度（0-1）
+  max_tokens?: number; // 最大トークン数
+}
+
+export interface ConditionConfig {
+  condition: string; // 条件式（例: "crisis_detected == true"）
+}
+
+export interface NotificationConfig {
+  methods: ('email' | 'slack')[]; // 通知方法
+  recipients?: string[]; // 受信者リスト
+}
+
+// ノード固有の設定を統合
+export type NodeConfig =
+  | CrisisDetectorConfig
+  | RAGSearchConfig
+  | LLMCallConfig
+  | ConditionConfig
+  | NotificationConfig
+  | Record<string, unknown>;
+
+export interface WorkflowNode {
+  node_id: string; // UUID
+  node_type: NodeType;
+  name: string; // ノード表示名
+  config: NodeConfig; // ノード固有の設定
+  position: NodePosition; // キャンバス上の位置
+}
+
+export interface WorkflowConnection {
+  connection_id: string; // UUID
+  source_node_id: string; // 接続元ノードID
+  target_node_id: string; // 接続先ノードID
+  source_port?: string; // 接続元ポート（条件分岐等で使用）
+  is_crisis_route?: boolean; // 危機検出ルートかどうか
+}
+
+export interface Workflow {
+  workflow_id: string; // UUID
+  app_id: string; // アプリID
+  name: string; // ワークフロー名
+  description?: string; // 説明
+  nodes: WorkflowNode[]; // ノード配列
+  connections: WorkflowConnection[]; // 接続配列
+  is_active: boolean; // アクティブかどうか
+  created_at: string; // ISO 8601
+  updated_at?: string; // ISO 8601
+}
+
+export interface WorkflowTestRequest {
+  workflow_id: string;
+  test_input: string; // テスト用ユーザーメッセージ
+}
+
+export interface NodeExecutionLog {
+  node_id: string;
+  node_name: string;
+  status: 'success' | 'error' | 'warning';
+  output: string; // 実行結果テキスト
+  execution_time_ms: number; // 実行時間（ミリ秒）
+}
+
+export interface WorkflowTestResult {
+  workflow_id: string;
+  test_input: string;
+  execution_logs: NodeExecutionLog[]; // 各ノードの実行ログ
+  final_output?: string; // 最終出力
+  total_execution_time_ms: number; // 総実行時間
+  crisis_detected?: boolean; // 危機検出フラグ
+}
+
+// --------------------------------------------
 // API エンドポイント定義
 // --------------------------------------------
 
@@ -376,6 +542,18 @@ export const API_PATHS = {
   USERS: {
     LIST: '/v1/users',
     DETAIL: (userId: string) => `/v1/users/${userId}`,
+  },
+  PROMPTS: {
+    GET: (appId: string) => `/admin/app/${appId}/prompt`, // 現在のプロンプト取得
+    UPDATE: (appId: string) => `/admin/app/${appId}/prompt`, // プロンプト更新
+    VERSIONS: (appId: string) => `/admin/app/${appId}/prompt/versions`, // バージョン履歴取得
+    TEST: (appId: string) => `/admin/app/${appId}/prompt/test`, // プロンプトテスト実行
+    AB_TEST_CONFIG: (appId: string) => `/admin/app/${appId}/ab-test`, // A/Bテスト設定取得・更新
+  },
+  WORKFLOWS: {
+    GET: (appId: string) => `/admin/app/${appId}/workflow`, // ワークフロー取得
+    UPDATE: (appId: string) => `/admin/app/${appId}/workflow`, // ワークフロー更新
+    TEST: (appId: string) => `/admin/app/${appId}/workflow/test`, // ワークフロー実行テスト
   },
 } as const;
 
