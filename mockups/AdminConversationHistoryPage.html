@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>会話履歴管理 - RAGベースAIコーチング</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+  <!-- Material Icons -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+  <style>
+    /* CSS Variables - Design System (Mental-Base) */
+    :root {
+      /* Colors */
+      --primary: #2c5282;
+      --primary-light: #3182ce;
+      --primary-dark: #1a365d;
+      --secondary: #4299e1;
+      --secondary-light: #63b3ed;
+      --secondary-dark: #2b6cb0;
+
+      --success: #48bb78;
+      --success-light: #68d391;
+      --success-dark: #2f855a;
+
+      --warning: #ecc94b;
+      --warning-light: #f6e05e;
+      --warning-dark: #d69e2e;
+
+      --danger: #f56565;
+      --danger-light: #fc8181;
+      --danger-dark: #c53030;
+
+      --info: #4299e1;
+      --info-light: #63b3ed;
+      --info-dark: #2b6cb0;
+
+      /* Neutral Colors */
+      --bg-primary: #ffffff;
+      --bg-secondary: #f7fafc;
+      --bg-tertiary: #edf2f7;
+      --page-background: #f5f7fa;
+
+      --text-primary: #2d3748;
+      --text-secondary: #4a5568;
+      --text-tertiary: #718096;
+      --text-disabled: #a0aec0;
+
+      --border-color: #e2e8f0;
+      --border-dark: #cbd5e0;
+
+      /* Spacing */
+      --spacing-xs: 4px;
+      --spacing-sm: 8px;
+      --spacing-md: 16px;
+      --spacing-lg: 24px;
+      --spacing-xl: 32px;
+      --spacing-2xl: 48px;
+
+      /* Border Radius */
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+      --radius-full: 9999px;
+
+      /* Shadows */
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+      /* Font Sizes */
+      --font-xs: 12px;
+      --font-sm: 14px;
+      --font-md: 16px;
+      --font-lg: 18px;
+      --font-xl: 20px;
+      --font-2xl: 24px;
+      --font-3xl: 32px;
+
+      /* Transitions */
+      --transition-fast: 150ms ease-in-out;
+      --transition-normal: 250ms ease-in-out;
+      --transition-slow: 350ms ease-in-out;
+    }
+
+    /* Reset & Base Styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Roboto', 'Noto Sans JP', sans-serif;
+      background-color: var(--page-background);
+      color: var(--text-primary);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* App Container */
+    .app-container {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Side Navigation */
+    .side-nav {
+      width: 240px;
+      background-color: var(--primary-dark);
+      color: white;
+      padding: var(--spacing-md) 0;
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      height: 100vh;
+      z-index: 100;
+    }
+
+    .side-nav-header {
+      padding: 0 var(--spacing-md);
+      margin-bottom: var(--spacing-lg);
+    }
+
+    .logo {
+      font-weight: 700;
+      font-size: var(--font-lg);
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-xs);
+      margin-bottom: var(--spacing-md);
+    }
+
+    .logo .material-icons {
+      font-size: 24px;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      padding: var(--spacing-md);
+      border-radius: var(--radius-md);
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background-color: var(--secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 500;
+    }
+
+    .user-details {
+      flex: 1;
+    }
+
+    .user-name {
+      font-weight: 500;
+      font-size: var(--font-sm);
+    }
+
+    .user-role {
+      font-size: var(--font-xs);
+      opacity: 0.8;
+    }
+
+    .nav-menu {
+      flex: 1;
+      padding: 0 var(--spacing-md);
+      overflow-y: auto;
+    }
+
+    .nav-section {
+      margin-bottom: var(--spacing-md);
+    }
+
+    .nav-section-title {
+      font-size: var(--font-xs);
+      text-transform: uppercase;
+      opacity: 0.6;
+      margin-bottom: var(--spacing-xs);
+      padding: 0 var(--spacing-sm);
+    }
+
+    .nav-items {
+      list-style: none;
+    }
+
+    .nav-item {
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      padding: var(--spacing-sm) var(--spacing-md);
+      border-radius: var(--radius-md);
+      text-decoration: none;
+      color: rgba(255, 255, 255, 0.8);
+      transition: all var(--transition-fast);
+      font-size: var(--font-sm);
+    }
+
+    .nav-link:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+      color: white;
+    }
+
+    .nav-link.active {
+      background-color: var(--primary);
+      color: white;
+    }
+
+    .nav-link .material-icons {
+      font-size: 20px;
+    }
+
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      margin-left: 240px;
+      padding: var(--spacing-xl);
+      background-color: var(--page-background);
+      min-height: 100vh;
+    }
+
+    /* Content Header */
+    .content-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-2xl);
+    }
+
+    .page-title {
+      font-size: var(--font-2xl);
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-md);
+    }
+
+    .icon-button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      transition: background-color var(--transition-fast);
+    }
+
+    .icon-button:hover {
+      background-color: rgba(0, 0, 0, 0.05);
+    }
+
+    /* Two Column Layout */
+    .two-column-layout {
+      display: grid;
+      grid-template-columns: 40% 60%;
+      gap: var(--spacing-lg);
+      height: calc(100vh - 120px);
+    }
+
+    /* Left Column: Session List */
+    .session-list-column {
+      display: flex;
+      flex-direction: column;
+      background-color: var(--bg-primary);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+    }
+
+    .filter-section {
+      padding: var(--spacing-lg);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .filter-group {
+      margin-bottom: var(--spacing-md);
+    }
+
+    .filter-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .filter-label {
+      display: block;
+      font-size: var(--font-sm);
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .filter-select {
+      width: 100%;
+      padding: var(--spacing-sm) var(--spacing-md);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      font-size: var(--font-sm);
+      font-family: inherit;
+      background-color: var(--bg-primary);
+      cursor: pointer;
+      transition: border-color var(--transition-fast);
+    }
+
+    .filter-select:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .filter-checkbox {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      cursor: pointer;
+    }
+
+    .filter-checkbox input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+
+    .filter-checkbox label {
+      font-size: var(--font-sm);
+      color: var(--text-primary);
+      cursor: pointer;
+    }
+
+    .search-box {
+      width: 100%;
+      padding: var(--spacing-sm) var(--spacing-md);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      font-size: var(--font-sm);
+      font-family: inherit;
+      transition: border-color var(--transition-fast);
+    }
+
+    .search-box:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .session-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--spacing-md);
+    }
+
+    .session-card {
+      background-color: var(--bg-secondary);
+      border: 2px solid transparent;
+      border-radius: var(--radius-md);
+      padding: var(--spacing-md);
+      margin-bottom: var(--spacing-md);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .session-card:hover {
+      background-color: var(--bg-tertiary);
+      border-color: var(--primary-light);
+    }
+
+    .session-card.selected {
+      background-color: var(--bg-primary);
+      border-color: var(--primary);
+      box-shadow: var(--shadow-md);
+    }
+
+    .session-card.crisis {
+      border-left: 4px solid var(--danger);
+    }
+
+    .session-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: var(--spacing-sm);
+    }
+
+    .session-name {
+      font-size: var(--font-md);
+      font-weight: 500;
+      color: var(--text-primary);
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-xs);
+    }
+
+    .crisis-icon {
+      color: var(--danger);
+      font-size: 20px;
+    }
+
+    .session-client {
+      font-size: var(--font-sm);
+      color: var(--text-secondary);
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .session-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: var(--font-xs);
+      color: var(--text-tertiary);
+    }
+
+    /* Right Column: Session Detail */
+    .session-detail-column {
+      display: flex;
+      flex-direction: column;
+      background-color: var(--bg-primary);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+    }
+
+    .session-detail-header {
+      padding: var(--spacing-lg);
+      border-bottom: 1px solid var(--border-color);
+      background-color: var(--bg-secondary);
+    }
+
+    .session-detail-title {
+      font-size: var(--font-lg);
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: var(--spacing-xs);
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+    }
+
+    .crisis-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--spacing-xs);
+      padding: 4px var(--spacing-sm);
+      background-color: var(--danger);
+      color: white;
+      border-radius: var(--radius-full);
+      font-size: var(--font-xs);
+      font-weight: 500;
+    }
+
+    .crisis-badge .material-icons {
+      font-size: 14px;
+    }
+
+    .session-id {
+      font-size: var(--font-xs);
+      color: var(--text-tertiary);
+    }
+
+    .message-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--spacing-lg);
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-lg);
+    }
+
+    .message-item {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-sm);
+    }
+
+    .message-item.user {
+      align-items: flex-end;
+    }
+
+    .message-item.assistant {
+      align-items: flex-start;
+    }
+
+    .message-bubble {
+      max-width: 75%;
+      padding: 12px 16px;
+      border-radius: var(--radius-md);
+      font-size: var(--font-sm);
+      line-height: 1.5;
+    }
+
+    .message-item.user .message-bubble {
+      background-color: var(--primary);
+      color: white;
+      border-radius: 16px 16px 4px 16px;
+    }
+
+    .message-item.assistant .message-bubble {
+      background-color: var(--bg-secondary);
+      color: var(--text-primary);
+      border-radius: 16px 16px 16px 4px;
+    }
+
+    .message-item.crisis .message-bubble {
+      border: 2px solid var(--danger);
+      background-color: rgba(245, 101, 101, 0.05);
+      position: relative;
+    }
+
+    .crisis-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--spacing-xs);
+      padding: 4px var(--spacing-sm);
+      background-color: var(--danger);
+      color: white;
+      border-radius: var(--radius-full);
+      font-size: 10px;
+      font-weight: 500;
+      margin-top: var(--spacing-xs);
+    }
+
+    .crisis-indicator .material-icons {
+      font-size: 12px;
+    }
+
+    .message-time {
+      font-size: var(--font-xs);
+      color: var(--text-tertiary);
+      padding: 0 4px;
+    }
+
+    .citation {
+      max-width: 75%;
+      margin-top: var(--spacing-xs);
+      padding: var(--spacing-sm);
+      background-color: var(--bg-tertiary);
+      border-left: 3px solid var(--primary);
+      border-radius: var(--radius-sm);
+    }
+
+    .citation-header {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-xs);
+      font-size: var(--font-xs);
+      color: var(--primary);
+      font-weight: 500;
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .citation-header .material-icons {
+      font-size: 14px;
+    }
+
+    .citation-item {
+      font-size: var(--font-xs);
+      color: var(--text-secondary);
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .citation-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .citation-similarity {
+      color: var(--text-tertiary);
+      font-weight: 500;
+    }
+
+    .empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: var(--spacing-2xl);
+      text-align: center;
+    }
+
+    .empty-state .material-icons {
+      font-size: 80px;
+      color: var(--text-disabled);
+      margin-bottom: var(--spacing-lg);
+    }
+
+    .empty-state h2 {
+      font-size: var(--font-xl);
+      color: var(--text-secondary);
+      margin-bottom: var(--spacing-sm);
+      font-weight: 500;
+    }
+
+    .empty-state p {
+      font-size: var(--font-sm);
+      color: var(--text-tertiary);
+    }
+
+    /* Scrollbar Styles */
+    .session-list::-webkit-scrollbar,
+    .message-list::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .session-list::-webkit-scrollbar-track,
+    .message-list::-webkit-scrollbar-track {
+      background: var(--bg-tertiary);
+    }
+
+    .session-list::-webkit-scrollbar-thumb,
+    .message-list::-webkit-scrollbar-thumb {
+      background: var(--text-tertiary);
+      border-radius: 3px;
+    }
+
+    /* Responsive */
+    @media (max-width: 1200px) {
+      .two-column-layout {
+        grid-template-columns: 45% 55%;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .side-nav {
+        display: none;
+      }
+
+      .main-content {
+        margin-left: 0;
+        padding: var(--spacing-lg);
+      }
+
+      .two-column-layout {
+        grid-template-columns: 1fr;
+        height: auto;
+      }
+
+      .session-list-column {
+        max-height: 400px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Side Navigation -->
+    <nav class="side-nav">
+      <div class="side-nav-header">
+        <div class="logo">
+          <span class="material-icons">hub</span>
+          COM:PASS
+        </div>
+        <div class="user-info">
+          <div class="avatar">C</div>
+          <div class="user-details">
+            <div class="user-name">コーチ</div>
+            <div class="user-role">管理者</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="nav-menu">
+        <div class="nav-section">
+          <div class="nav-section-title">管理</div>
+          <ul class="nav-items">
+            <li class="nav-item">
+              <a href="/admin" class="nav-link">
+                <span class="material-icons">dashboard</span>
+                <span>ダッシュボード</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="/admin/datasets" class="nav-link">
+                <span class="material-icons">folder</span>
+                <span>ナレッジベース</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="/admin/logs" class="nav-link active">
+                <span class="material-icons">history</span>
+                <span>会話履歴</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="/admin/users" class="nav-link">
+                <span class="material-icons">people</span>
+                <span>ユーザー管理</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">設定</div>
+          <ul class="nav-items">
+            <li class="nav-item">
+              <a href="/admin/app/config" class="nav-link">
+                <span class="material-icons">tune</span>
+                <span>プロンプト編集</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="/admin/app/workflow" class="nav-link">
+                <span class="material-icons">account_tree</span>
+                <span>ワークフロー</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">その他</div>
+          <ul class="nav-items">
+            <li class="nav-item">
+              <a href="/chat" class="nav-link">
+                <span class="material-icons">chat</span>
+                <span>チャット画面</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="/logout" class="nav-link">
+                <span class="material-icons">logout</span>
+                <span>ログアウト</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Content Header -->
+      <div class="content-header">
+        <div>
+          <h1 class="page-title">会話履歴管理</h1>
+        </div>
+        <div class="header-actions">
+          <button class="icon-button" title="通知">
+            <span class="material-icons">notifications</span>
+          </button>
+          <button class="icon-button" title="設定">
+            <span class="material-icons">settings</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Two Column Layout -->
+      <div class="two-column-layout">
+        <!-- Left Column: Session List -->
+        <div class="session-list-column">
+          <!-- Filter Section -->
+          <div class="filter-section">
+            <div class="filter-group">
+              <label class="filter-label">クライアント選択</label>
+              <select class="filter-select" id="client-filter" onchange="filterSessions()">
+                <option value="all">全クライアント</option>
+                <option value="client1">client1@example.com</option>
+                <option value="client2">client2@example.com</option>
+                <option value="client3">client3@example.com</option>
+              </select>
+            </div>
+
+            <div class="filter-group">
+              <div class="filter-checkbox">
+                <input type="checkbox" id="crisis-filter" onchange="filterSessions()">
+                <label for="crisis-filter">危機フラグのみ表示</label>
+              </div>
+            </div>
+
+            <div class="filter-group">
+              <input type="text" class="search-box" placeholder="セッション名で検索" oninput="searchSessions(this.value)">
+            </div>
+          </div>
+
+          <!-- Session List -->
+          <div class="session-list" id="session-list">
+            <div class="session-card selected crisis" data-session-id="session-12345" onclick="selectSession('session-12345')">
+              <div class="session-header">
+                <div class="session-name">
+                  <span class="material-icons crisis-icon">warning</span>
+                  client1@example.comとの会話 - 2025-11-01
+                </div>
+              </div>
+              <div class="session-client">クライアント: client1@example.com</div>
+              <div class="session-meta">
+                <span>最終: 2025-11-01 14:30</span>
+                <span>15件</span>
+              </div>
+            </div>
+
+            <div class="session-card" data-session-id="session-12346" onclick="selectSession('session-12346')">
+              <div class="session-header">
+                <div class="session-name">
+                  client2@example.comとの会話 - 2025-11-01
+                </div>
+              </div>
+              <div class="session-client">クライアント: client2@example.com</div>
+              <div class="session-meta">
+                <span>最終: 2025-11-01 10:15</span>
+                <span>8件</span>
+              </div>
+            </div>
+
+            <div class="session-card" data-session-id="session-12347" onclick="selectSession('session-12347')">
+              <div class="session-header">
+                <div class="session-name">
+                  client1@example.comとの会話 - 2025-10-30
+                </div>
+              </div>
+              <div class="session-client">クライアント: client1@example.com</div>
+              <div class="session-meta">
+                <span>最終: 2025-10-30 16:45</span>
+                <span>22件</span>
+              </div>
+            </div>
+
+            <div class="session-card" data-session-id="session-12348" onclick="selectSession('session-12348')">
+              <div class="session-header">
+                <div class="session-name">
+                  client3@example.comとの会話 - 2025-10-29
+                </div>
+              </div>
+              <div class="session-client">クライアント: client3@example.com</div>
+              <div class="session-meta">
+                <span>最終: 2025-10-29 09:20</span>
+                <span>12件</span>
+              </div>
+            </div>
+
+            <div class="session-card crisis" data-session-id="session-12349" onclick="selectSession('session-12349')">
+              <div class="session-header">
+                <div class="session-name">
+                  <span class="material-icons crisis-icon">warning</span>
+                  client2@example.comとの会話 - 2025-10-28
+                </div>
+              </div>
+              <div class="session-client">クライアント: client2@example.com</div>
+              <div class="session-meta">
+                <span>最終: 2025-10-28 13:00</span>
+                <span>18件</span>
+              </div>
+            </div>
+
+            <div class="session-card" data-session-id="session-12350" onclick="selectSession('session-12350')">
+              <div class="session-header">
+                <div class="session-name">
+                  client1@example.comとの会話 - 2025-10-25
+                </div>
+              </div>
+              <div class="session-client">クライアント: client1@example.com</div>
+              <div class="session-meta">
+                <span>最終: 2025-10-25 11:30</span>
+                <span>10件</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Session Detail -->
+        <div class="session-detail-column">
+          <div class="session-detail-header">
+            <div class="session-detail-title">
+              client1@example.comとの会話 - 2025-11-01
+              <span class="crisis-badge">
+                <span class="material-icons">warning</span>
+                危機フラグ
+              </span>
+            </div>
+            <div class="session-id">セッションID: session-12345</div>
+          </div>
+
+          <div class="message-list" id="message-list">
+            <!-- Message 1: User -->
+            <div class="message-item user">
+              <div class="message-bubble">
+                最近、仕事のプレッシャーがひどくて、朝起きるのがつらいです。
+              </div>
+              <div class="message-time">14:20</div>
+            </div>
+
+            <!-- Message 2: Assistant with Citation -->
+            <div class="message-item assistant">
+              <div class="message-bubble">
+                そうなんですね。プレッシャーを感じていらっしゃるんですね。具体的にどのような状況でプレッシャーを感じますか？
+              </div>
+              <div class="message-time">14:21</div>
+              <div class="citation">
+                <div class="citation-header">
+                  <span class="material-icons">auto_awesome</span>
+                  <span>引用元</span>
+                </div>
+                <div class="citation-item">
+                  - システムRAG: 「コーチング基礎理論.pdf」（チャンク 45）<br>
+                  <span class="citation-similarity">類似度: 0.89</span>
+                </div>
+                <div class="citation-item">
+                  - ユーザーRAG: 「client1のタスク履歴」（チャンク 12）<br>
+                  <span class="citation-similarity">類似度: 0.82</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Message 3: User with Crisis Flag -->
+            <div class="message-item user crisis">
+              <div class="message-bubble">
+                上司からの期待が大きすぎて、ミスが許されない気がします。最近は眠れない日もあります。
+                <div class="crisis-indicator">
+                  <span class="material-icons">warning</span>
+                  危機キーワード検出
+                </div>
+              </div>
+              <div class="message-time">14:23</div>
+            </div>
+
+            <!-- Message 4: Assistant with Citation -->
+            <div class="message-item assistant">
+              <div class="message-bubble">
+                眠れない日があるとのこと、心配ですね。睡眠不足は心身に大きな影響を与えます。専門家への相談も検討されてはいかがでしょうか。まずは、プレッシャーを軽減する方法を一緒に考えましょう。
+              </div>
+              <div class="message-time">14:24</div>
+              <div class="citation">
+                <div class="citation-header">
+                  <span class="material-icons">auto_awesome</span>
+                  <span>引用元</span>
+                </div>
+                <div class="citation-item">
+                  - システムRAG: 「心理学的アプローチ.pdf」（チャンク 78）<br>
+                  <span class="citation-similarity">類似度: 0.91</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Message 5: User -->
+            <div class="message-item user">
+              <div class="message-bubble">
+                ありがとうございます。少し気持ちが楽になりました。
+              </div>
+              <div class="message-time">14:30</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // State management
+    let currentSessionId = 'session-12345';
+    let allSessions = [];
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('Admin Conversation History Page loaded');
+      // In production, fetch sessions from API
+    });
+
+    // Select Session
+    function selectSession(sessionId) {
+      console.log('Selecting session:', sessionId);
+      currentSessionId = sessionId;
+
+      // Update UI
+      document.querySelectorAll('.session-card').forEach(card => {
+        card.classList.remove('selected');
+      });
+      document.querySelector(`[data-session-id="${sessionId}"]`).classList.add('selected');
+
+      // In production, fetch session details from API
+      // For now, we'll show the same mock data
+      alert('セッション ' + sessionId + ' の詳細を取得します（実装時はAPIで取得）');
+    }
+
+    // Filter Sessions
+    function filterSessions() {
+      const clientFilter = document.getElementById('client-filter').value;
+      const crisisFilter = document.getElementById('crisis-filter').checked;
+
+      console.log('Filtering sessions - Client:', clientFilter, 'Crisis only:', crisisFilter);
+
+      const sessionCards = document.querySelectorAll('.session-card');
+      sessionCards.forEach(card => {
+        let show = true;
+
+        // Client filter
+        if (clientFilter !== 'all') {
+          const client = card.querySelector('.session-client').textContent;
+          if (!client.includes(clientFilter)) {
+            show = false;
+          }
+        }
+
+        // Crisis filter
+        if (crisisFilter) {
+          if (!card.classList.contains('crisis')) {
+            show = false;
+          }
+        }
+
+        card.style.display = show ? 'block' : 'none';
+      });
+    }
+
+    // Search Sessions
+    function searchSessions(query) {
+      console.log('Searching sessions:', query);
+
+      const sessionCards = document.querySelectorAll('.session-card');
+      sessionCards.forEach(card => {
+        const sessionName = card.querySelector('.session-name').textContent.toLowerCase();
+        const show = sessionName.includes(query.toLowerCase());
+        card.style.display = show ? 'block' : 'none';
+      });
+    }
+
+    // Navigation
+    document.querySelectorAll('.nav-link').forEach(link => {
+      link.addEventListener('click', function(e) {
+        const href = this.getAttribute('href');
+        console.log('Navigating to:', href);
+      });
+    });
+  </script>
+
+</body>
+</html>

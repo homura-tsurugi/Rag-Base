@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>管理ダッシュボード - RAGベースAIコーチング</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+  <!-- Material Icons -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+  <style>
+    /* CSS Variables - Design System (Mental-Base) */
+    :root {
+      /* Colors */
+      --primary: #2c5282;
+      --primary-light: #3182ce;
+      --primary-dark: #1a365d;
+      --secondary: #4299e1;
+      --secondary-light: #63b3ed;
+      --secondary-dark: #2b6cb0;
+
+      --success: #48bb78;
+      --success-light: #68d391;
+      --success-dark: #2f855a;
+
+      --warning: #ed8936;
+      --warning-light: #f6ad55;
+      --warning-dark: #c05621;
+
+      --danger: #f56565;
+      --danger-light: #fc8181;
+      --danger-dark: #c53030;
+
+      --info: #4299e1;
+      --info-light: #63b3ed;
+      --info-dark: #2b6cb0;
+
+      /* Neutral Colors */
+      --bg-primary: #ffffff;
+      --bg-secondary: #f7fafc;
+      --bg-tertiary: #edf2f7;
+      --page-background: #f5f7fa;
+
+      --text-primary: #2d3748;
+      --text-secondary: #4a5568;
+      --text-tertiary: #718096;
+      --text-disabled: #a0aec0;
+
+      --border-color: #e2e8f0;
+      --border-dark: #cbd5e0;
+
+      /* Spacing */
+      --spacing-xs: 4px;
+      --spacing-sm: 8px;
+      --spacing-md: 16px;
+      --spacing-lg: 24px;
+      --spacing-xl: 32px;
+      --spacing-2xl: 48px;
+
+      /* Border Radius */
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+      --radius-full: 9999px;
+
+      /* Shadows */
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+      /* Font Sizes */
+      --font-xs: 12px;
+      --font-sm: 14px;
+      --font-md: 16px;
+      --font-lg: 18px;
+      --font-xl: 20px;
+      --font-2xl: 24px;
+      --font-3xl: 32px;
+
+      /* Transitions */
+      --transition-fast: 150ms ease-in-out;
+      --transition-normal: 250ms ease-in-out;
+      --transition-slow: 350ms ease-in-out;
+    }
+
+    /* Reset & Base Styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Roboto', 'Noto Sans JP', sans-serif;
+      background-color: var(--page-background);
+      color: var(--text-primary);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* App Container */
+    .app-container {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Side Navigation */
+    .side-nav {
+      width: 240px;
+      background-color: var(--primary-dark);
+      color: white;
+      padding: var(--spacing-md) 0;
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      height: 100vh;
+      z-index: 100;
+    }
+
+    .side-nav-header {
+      padding: 0 var(--spacing-md);
+      margin-bottom: var(--spacing-lg);
+    }
+
+    .logo {
+      font-weight: 700;
+      font-size: var(--font-lg);
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-xs);
+      margin-bottom: var(--spacing-md);
+    }
+
+    .logo .material-icons {
+      font-size: 24px;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      padding: var(--spacing-md);
+      border-radius: var(--radius-md);
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background-color: var(--secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 500;
+    }
+
+    .user-details {
+      flex: 1;
+    }
+
+    .user-name {
+      font-weight: 500;
+      font-size: var(--font-sm);
+    }
+
+    .user-role {
+      font-size: var(--font-xs);
+      opacity: 0.8;
+    }
+
+    .nav-menu {
+      flex: 1;
+      padding: 0 var(--spacing-md);
+      overflow-y: auto;
+    }
+
+    .nav-section {
+      margin-bottom: var(--spacing-md);
+    }
+
+    .nav-section-title {
+      font-size: var(--font-xs);
+      text-transform: uppercase;
+      opacity: 0.6;
+      margin-bottom: var(--spacing-xs);
+      padding: 0 var(--spacing-sm);
+    }
+
+    .nav-items {
+      list-style: none;
+    }
+
+    .nav-item {
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      padding: var(--spacing-sm) var(--spacing-md);
+      border-radius: var(--radius-md);
+      text-decoration: none;
+      color: rgba(255, 255, 255, 0.8);
+      transition: all var(--transition-fast);
+      font-size: var(--font-sm);
+    }
+
+    .nav-link:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+      color: white;
+    }
+
+    .nav-link.active {
+      background-color: var(--primary);
+      color: white;
+    }
+
+    .nav-link .material-icons {
+      font-size: 20px;
+    }
+
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      margin-left: 240px;
+      padding: var(--spacing-xl);
+      background-color: var(--page-background);
+      min-height: 100vh;
+    }
+
+    /* Content Header */
+    .content-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-2xl);
+    }
+
+    .page-title {
+      font-size: var(--font-2xl);
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-md);
+    }
+
+    .icon-button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      transition: background-color var(--transition-fast);
+    }
+
+    .icon-button:hover {
+      background-color: rgba(0, 0, 0, 0.05);
+    }
+
+    /* System Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: var(--spacing-lg);
+      margin-bottom: var(--spacing-2xl);
+    }
+
+    .stat-card {
+      background-color: var(--bg-primary);
+      border-radius: var(--radius-md);
+      padding: var(--spacing-lg);
+      box-shadow: var(--shadow-md);
+      transition: all var(--transition-fast);
+    }
+
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .stat-header {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-md);
+      margin-bottom: var(--spacing-md);
+    }
+
+    .stat-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .stat-icon.primary {
+      background-color: rgba(44, 82, 130, 0.1);
+      color: var(--primary);
+    }
+
+    .stat-icon.success {
+      background-color: rgba(72, 187, 120, 0.1);
+      color: var(--success);
+    }
+
+    .stat-icon.info {
+      background-color: rgba(66, 153, 225, 0.1);
+      color: var(--info);
+    }
+
+    .stat-icon.warning {
+      background-color: rgba(237, 137, 54, 0.1);
+      color: var(--warning);
+    }
+
+    .stat-details {
+      flex: 1;
+    }
+
+    .stat-label {
+      font-size: var(--font-sm);
+      color: var(--text-secondary);
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .stat-value {
+      font-size: var(--font-3xl);
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .stat-unit {
+      font-size: var(--font-lg);
+      font-weight: 400;
+      color: var(--text-tertiary);
+      margin-left: var(--spacing-xs);
+    }
+
+    .stat-footer {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-xs);
+      font-size: var(--font-xs);
+      color: var(--text-tertiary);
+      margin-top: var(--spacing-sm);
+    }
+
+    .stat-footer .material-icons {
+      font-size: 16px;
+    }
+
+    /* Navigation Cards Section */
+    .section-header {
+      margin-bottom: var(--spacing-lg);
+    }
+
+    .section-title {
+      font-size: var(--font-xl);
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .section-subtitle {
+      font-size: var(--font-sm);
+      color: var(--text-secondary);
+    }
+
+    .nav-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: var(--spacing-lg);
+    }
+
+    .nav-card {
+      background-color: var(--bg-primary);
+      border-radius: var(--radius-md);
+      padding: var(--spacing-xl);
+      box-shadow: var(--shadow-md);
+      transition: all var(--transition-fast);
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-md);
+      cursor: pointer;
+      border: 2px solid transparent;
+    }
+
+    .nav-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+      border-color: var(--primary-light);
+    }
+
+    .nav-card-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: var(--radius-lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      margin-bottom: var(--spacing-sm);
+    }
+
+    .nav-card-icon.datasets {
+      background-color: rgba(44, 82, 130, 0.1);
+      color: var(--primary);
+    }
+
+    .nav-card-icon.logs {
+      background-color: rgba(237, 137, 54, 0.1);
+      color: var(--warning);
+    }
+
+    .nav-card-icon.prompts {
+      background-color: rgba(66, 153, 225, 0.1);
+      color: var(--info);
+    }
+
+    .nav-card-icon.workflows {
+      background-color: rgba(159, 122, 234, 0.1);
+      color: #9f7aea;
+    }
+
+    .nav-card-icon.users {
+      background-color: rgba(72, 187, 120, 0.1);
+      color: var(--success);
+    }
+
+    .nav-card-title {
+      font-size: var(--font-lg);
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .nav-card-description {
+      font-size: var(--font-sm);
+      color: var(--text-secondary);
+      line-height: 1.5;
+      flex: 1;
+    }
+
+    .nav-card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: var(--spacing-md);
+      border-top: 1px solid var(--border-color);
+    }
+
+    .nav-card-action {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-xs);
+      font-size: var(--font-sm);
+      color: var(--primary);
+      font-weight: 500;
+    }
+
+    .nav-card-action .material-icons {
+      font-size: 18px;
+      transition: transform var(--transition-fast);
+    }
+
+    .nav-card:hover .nav-card-action .material-icons {
+      transform: translateX(4px);
+    }
+
+    .nav-card-badge {
+      background-color: var(--bg-tertiary);
+      color: var(--text-secondary);
+      padding: 4px var(--spacing-sm);
+      border-radius: var(--radius-full);
+      font-size: var(--font-xs);
+      font-weight: 500;
+    }
+
+    /* Responsive */
+    @media (max-width: 1200px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .nav-cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .side-nav {
+        display: none;
+      }
+
+      .main-content {
+        margin-left: 0;
+        padding: var(--spacing-lg);
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .nav-cards-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .content-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-md);
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Side Navigation -->
+    <nav class="side-nav">
+      <div class="side-nav-header">
+        <div class="logo">
+          <span class="material-icons">hub</span>
+          COM:PASS
+        </div>
+        <div class="user-info">
+          <div class="avatar">C</div>
+          <div class="user-details">
+            <div class="user-name">コーチ</div>
+            <div class="user-role">管理者</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="nav-menu">
+        <div class="nav-section">
+          <div class="nav-section-title">管理</div>
+          <ul class="nav-items">
+            <li class="nav-item">
+              <a href="/admin" class="nav-link active">
+                <span class="material-icons">dashboard</span>
+                <span>ダッシュボード</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="/admin/datasets" class="nav-link">
+                <span class="material-icons">folder</span>
+                <span>ナレッジベース</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="/admin/logs" class="nav-link">
+                <span class="material-icons">history</span>
+                <span>会話履歴</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="/admin/users" class="nav-link">
+                <span class="material-icons">people</span>
+                <span>ユーザー管理</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">設定</div>
+          <ul class="nav-items">
+            <li class="nav-item">
+              <a href="/admin/app/config" class="nav-link">
+                <span class="material-icons">tune</span>
+                <span>プロンプト編集</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="/admin/app/workflow" class="nav-link">
+                <span class="material-icons">account_tree</span>
+                <span>ワークフロー</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">その他</div>
+          <ul class="nav-items">
+            <li class="nav-item">
+              <a href="/chat" class="nav-link">
+                <span class="material-icons">chat</span>
+                <span>チャット画面</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="/logout" class="nav-link">
+                <span class="material-icons">logout</span>
+                <span>ログアウト</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Content Header -->
+      <div class="content-header">
+        <div>
+          <h1 class="page-title">管理ダッシュボード</h1>
+        </div>
+        <div class="header-actions">
+          <button class="icon-button" title="通知">
+            <span class="material-icons">notifications</span>
+          </button>
+          <button class="icon-button" title="設定">
+            <span class="material-icons">settings</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- System Stats Grid -->
+      <div class="stats-grid">
+        <!-- Total Users -->
+        <div class="stat-card">
+          <div class="stat-header">
+            <div class="stat-icon primary">
+              <span class="material-icons">people</span>
+            </div>
+            <div class="stat-details">
+              <div class="stat-label">総ユーザー数</div>
+              <div>
+                <span class="stat-value">12</span>
+                <span class="stat-unit">人</span>
+              </div>
+            </div>
+          </div>
+          <div class="stat-footer">
+            <span class="material-icons">info</span>
+            <span>アクティブユーザー: 10人</span>
+          </div>
+        </div>
+
+        <!-- Total Conversations -->
+        <div class="stat-card">
+          <div class="stat-header">
+            <div class="stat-icon success">
+              <span class="material-icons">forum</span>
+            </div>
+            <div class="stat-details">
+              <div class="stat-label">総会話数</div>
+              <div>
+                <span class="stat-value">347</span>
+                <span class="stat-unit">件</span>
+              </div>
+            </div>
+          </div>
+          <div class="stat-footer">
+            <span class="material-icons">info</span>
+            <span>今週の新規会話: 28件</span>
+          </div>
+        </div>
+
+        <!-- Total Messages -->
+        <div class="stat-card">
+          <div class="stat-header">
+            <div class="stat-icon info">
+              <span class="material-icons">chat_bubble</span>
+            </div>
+            <div class="stat-details">
+              <div class="stat-label">総メッセージ数</div>
+              <div>
+                <span class="stat-value">1,542</span>
+                <span class="stat-unit">件</span>
+              </div>
+            </div>
+          </div>
+          <div class="stat-footer">
+            <span class="material-icons">info</span>
+            <span>平均: 4.4メッセージ/会話</span>
+          </div>
+        </div>
+
+        <!-- API Usage -->
+        <div class="stat-card">
+          <div class="stat-header">
+            <div class="stat-icon warning">
+              <span class="material-icons">api</span>
+            </div>
+            <div class="stat-details">
+              <div class="stat-label">Claude API使用量</div>
+              <div>
+                <span class="stat-value">245K</span>
+                <span class="stat-unit">トークン</span>
+              </div>
+            </div>
+          </div>
+          <div class="stat-footer">
+            <span class="material-icons">info</span>
+            <span>今月の推定コスト: $8.50</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation Cards Section -->
+      <div class="section-header">
+        <h2 class="section-title">管理機能</h2>
+        <p class="section-subtitle">各管理機能にアクセスできます</p>
+      </div>
+
+      <div class="nav-cards-grid">
+        <!-- Knowledge Base Management -->
+        <a href="/admin/datasets" class="nav-card">
+          <div class="nav-card-icon datasets">
+            <span class="material-icons">folder</span>
+          </div>
+          <div>
+            <div class="nav-card-title">ナレッジベース管理</div>
+            <div class="nav-card-description">
+              システムRAG（専門知識）とユーザーRAG（個別データ）のアップロード・更新・削除を管理します。
+            </div>
+          </div>
+          <div class="nav-card-footer">
+            <div class="nav-card-action">
+              <span>管理画面へ</span>
+              <span class="material-icons">arrow_forward</span>
+            </div>
+            <div class="nav-card-badge">D-005</div>
+          </div>
+        </a>
+
+        <!-- Conversation History Management -->
+        <a href="/admin/logs" class="nav-card">
+          <div class="nav-card-icon logs">
+            <span class="material-icons">history</span>
+          </div>
+          <div>
+            <div class="nav-card-title">会話履歴管理</div>
+            <div class="nav-card-description">
+              全クライアントの会話履歴を確認し、危機フラグや引用元情報をチェックできます。
+            </div>
+          </div>
+          <div class="nav-card-footer">
+            <div class="nav-card-action">
+              <span>管理画面へ</span>
+              <span class="material-icons">arrow_forward</span>
+            </div>
+            <div class="nav-card-badge">D-006</div>
+          </div>
+        </a>
+
+        <!-- Prompt Editing -->
+        <a href="/admin/app/config" class="nav-card">
+          <div class="nav-card-icon prompts">
+            <span class="material-icons">tune</span>
+          </div>
+          <div>
+            <div class="nav-card-title">プロンプト編集</div>
+            <div class="nav-card-description">
+              AIの応答スタイル、ペルソナ、指示を調整し、A/Bテストやプレビューを実行できます。
+            </div>
+          </div>
+          <div class="nav-card-footer">
+            <div class="nav-card-action">
+              <span>管理画面へ</span>
+              <span class="material-icons">arrow_forward</span>
+            </div>
+            <div class="nav-card-badge">D-007</div>
+          </div>
+        </a>
+
+        <!-- Workflow Editing -->
+        <a href="/admin/app/workflow" class="nav-card">
+          <div class="nav-card-icon workflows">
+            <span class="material-icons">account_tree</span>
+          </div>
+          <div>
+            <div class="nav-card-title">ワークフロー編集</div>
+            <div class="nav-card-description">
+              RAG検索フローや危機検出フローをビジュアルエディタで調整・テストできます。
+            </div>
+          </div>
+          <div class="nav-card-footer">
+            <div class="nav-card-action">
+              <span>管理画面へ</span>
+              <span class="material-icons">arrow_forward</span>
+            </div>
+            <div class="nav-card-badge">D-008</div>
+          </div>
+        </a>
+
+        <!-- User Management -->
+        <a href="/admin/users" class="nav-card">
+          <div class="nav-card-icon users">
+            <span class="material-icons">people</span>
+          </div>
+          <div>
+            <div class="nav-card-title">ユーザー管理</div>
+            <div class="nav-card-description">
+              クライアントの追加・削除・情報編集、アクセストークンの発行を管理できます。
+            </div>
+          </div>
+          <div class="nav-card-footer">
+            <div class="nav-card-action">
+              <span>管理画面へ</span>
+              <span class="material-icons">arrow_forward</span>
+            </div>
+            <div class="nav-card-badge">D-009</div>
+          </div>
+        </a>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Navigation card click handling
+    document.querySelectorAll('.nav-card').forEach(card => {
+      card.addEventListener('click', function(e) {
+        // In production, this will navigate to the actual page
+        const href = this.getAttribute('href');
+        console.log('Navigating to:', href);
+      });
+    });
+
+    // Demo: Update stats dynamically (in production, fetch from API)
+    function updateStats() {
+      // This would be replaced with actual API calls in production
+      console.log('Stats updated');
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('Admin Dashboard loaded');
+      // In production, fetch initial stats from API
+      // updateStats();
+    });
+  </script>
+
+</body>
+</html>

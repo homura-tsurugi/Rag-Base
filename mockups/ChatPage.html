@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AIチャット - RAGベースAIコーチング</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+  <!-- Material Icons -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+  <style>
+    /* CSS Variables - Design System (Mental-Base完全統一) */
+    :root {
+      /* Colors */
+      --primary: #2c5282;
+      --primary-light: #3182ce;
+      --primary-dark: #1a365d;
+      --secondary: #4299e1;
+      --secondary-light: #63b3ed;
+      --secondary-dark: #2b6cb0;
+
+      --success: #48bb78;
+      --success-light: #68d391;
+      --success-dark: #2f855a;
+
+      --warning: #ed8936;
+      --warning-light: #f6ad55;
+      --warning-dark: #c05621;
+
+      --danger: #f56565;
+      --danger-light: #fc8181;
+      --danger-dark: #c53030;
+
+      --info: #4299e1;
+      --info-light: #63b3ed;
+      --info-dark: #2b6cb0;
+
+      /* Neutral Colors */
+      --bg-primary: #ffffff;
+      --bg-secondary: #f7fafc;
+      --bg-tertiary: #edf2f7;
+
+      --text-primary: #2d3748;
+      --text-secondary: #4a5568;
+      --text-tertiary: #718096;
+      --text-disabled: #a0aec0;
+
+      --border-color: #e2e8f0;
+      --border-dark: #cbd5e0;
+
+      /* Spacing */
+      --spacing-xs: 4px;
+      --spacing-sm: 8px;
+      --spacing-md: 16px;
+      --spacing-lg: 24px;
+      --spacing-xl: 32px;
+      --spacing-2xl: 48px;
+
+      /* Border Radius */
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+      --radius-full: 9999px;
+
+      /* Shadows */
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+      /* Font Sizes */
+      --font-xs: 12px;
+      --font-sm: 14px;
+      --font-md: 16px;
+      --font-lg: 18px;
+      --font-xl: 20px;
+      --font-2xl: 24px;
+
+      /* Transitions */
+      --transition-fast: 150ms ease-in-out;
+      --transition-normal: 250ms ease-in-out;
+      --transition-slow: 350ms ease-in-out;
+    }
+
+    /* Reset & Base Styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Roboto', 'Noto Sans JP', sans-serif;
+      background-color: var(--bg-secondary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      max-width: 600px;
+      margin: 0 auto;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    .header {
+      position: sticky;
+      top: 0;
+      background-color: var(--bg-primary);
+      border-bottom: 1px solid var(--border-color);
+      padding: var(--spacing-md);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: var(--shadow-sm);
+      z-index: 100;
+    }
+
+    .header-left {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .logo {
+      font-size: var(--font-xl);
+      font-weight: 700;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-xs);
+    }
+
+    .subtitle {
+      font-size: var(--font-xs);
+      color: var(--text-tertiary);
+      padding-left: 28px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-xs);
+    }
+
+    .icon-button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: var(--spacing-sm);
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color var(--transition-fast);
+      color: var(--text-secondary);
+    }
+
+    .icon-button:hover {
+      background-color: var(--bg-tertiary);
+    }
+
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Mode Selector */
+    .mode-selector {
+      position: sticky;
+      top: 61px;
+      background-color: var(--bg-primary);
+      border-bottom: 1px solid var(--border-color);
+      padding: var(--spacing-md);
+      overflow-x: auto;
+      z-index: 90;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .mode-selector::-webkit-scrollbar {
+      display: none;
+    }
+
+    .mode-tabs {
+      display: flex;
+      gap: var(--spacing-sm);
+      min-width: min-content;
+    }
+
+    .mode-tab {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-xs);
+      padding: var(--spacing-sm) var(--spacing-md);
+      border-radius: var(--radius-full);
+      border: 1px solid var(--border-dark);
+      background-color: var(--bg-primary);
+      color: var(--text-secondary);
+      font-size: var(--font-sm);
+      font-weight: 500;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .mode-tab:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      background-color: var(--bg-secondary);
+    }
+
+    .mode-tab.active {
+      background-color: var(--primary);
+      border-color: var(--primary);
+      color: var(--bg-primary);
+    }
+
+    .mode-tab .material-icons {
+      font-size: 18px;
+    }
+
+    /* Chat History Area */
+    .chat-history {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--spacing-md);
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-md);
+      background-color: var(--bg-secondary);
+      padding-bottom: 150px;
+    }
+
+    /* Welcome Message */
+    .welcome-container {
+      text-align: center;
+      padding: var(--spacing-2xl) var(--spacing-md);
+    }
+
+    .welcome-icon {
+      font-size: 64px;
+      color: var(--primary);
+      margin-bottom: var(--spacing-md);
+    }
+
+    .welcome-container h2 {
+      font-size: var(--font-2xl);
+      color: var(--text-primary);
+      margin-bottom: var(--spacing-sm);
+    }
+
+    .welcome-container p {
+      font-size: var(--font-md);
+      color: var(--text-secondary);
+      margin-bottom: var(--spacing-xl);
+    }
+
+    .quick-prompts {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--spacing-md);
+      margin-top: var(--spacing-lg);
+    }
+
+    .quick-prompt {
+      background-color: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: var(--spacing-md);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      text-align: center;
+    }
+
+    .quick-prompt:hover {
+      border-color: var(--primary);
+      box-shadow: var(--shadow-sm);
+      transform: translateY(-2px);
+    }
+
+    .quick-prompt .material-icons {
+      color: var(--primary);
+      margin-bottom: var(--spacing-xs);
+      font-size: 32px;
+    }
+
+    .quick-prompt-title {
+      font-weight: 500;
+      font-size: var(--font-sm);
+      color: var(--text-primary);
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .quick-prompt-desc {
+      font-size: var(--font-xs);
+      color: var(--text-tertiary);
+    }
+
+    /* Message Styles */
+    .message {
+      display: flex;
+      flex-direction: column;
+      max-width: 75%;
+      animation: fadeIn 0.3s;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* User Message */
+    .message.user {
+      align-self: flex-end;
+      align-items: flex-end;
+    }
+
+    .message.user .message-content {
+      background: var(--primary);
+      color: var(--bg-primary);
+      border-radius: 16px 16px 4px 16px;
+    }
+
+    /* AI Message */
+    .message.assistant {
+      align-self: flex-start;
+      align-items: flex-start;
+    }
+
+    .message.assistant .message-content {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      border-radius: 16px 16px 16px 4px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .message-content {
+      padding: 12px 16px;
+      word-wrap: break-word;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    .message-timestamp {
+      font-size: var(--font-xs);
+      color: var(--text-tertiary);
+      margin-top: 4px;
+      padding: 0 4px;
+    }
+
+    /* Citation (引用元情報) */
+    .citation {
+      margin-top: var(--spacing-sm);
+      padding: var(--spacing-sm);
+      background-color: var(--bg-tertiary);
+      border-left: 3px solid var(--primary);
+      border-radius: var(--radius-sm);
+    }
+
+    .citation-header {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-xs);
+      font-size: var(--font-xs);
+      color: var(--primary);
+      font-weight: 500;
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .citation-header .material-icons {
+      font-size: 14px;
+    }
+
+    .citation-sources {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--spacing-xs);
+    }
+
+    .source-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      font-size: 10px;
+      padding: 2px 8px;
+      background-color: rgba(44, 82, 130, 0.1);
+      color: var(--primary);
+      border-radius: var(--radius-full);
+      font-weight: 500;
+    }
+
+    .source-tag .material-icons {
+      font-size: 12px;
+    }
+
+    /* Typing Indicator */
+    .typing-indicator {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      padding: 12px 16px;
+      background-color: var(--bg-primary);
+      border-radius: 16px 16px 16px 4px;
+      box-shadow: var(--shadow-sm);
+      max-width: 75%;
+    }
+
+    .typing-dots {
+      display: flex;
+      gap: 4px;
+    }
+
+    .typing-dot {
+      width: 8px;
+      height: 8px;
+      background-color: var(--primary);
+      border-radius: 50%;
+      animation: typing-animation 1.4s infinite ease-in-out;
+    }
+
+    .typing-dot:nth-child(1) {
+      animation-delay: 0s;
+    }
+
+    .typing-dot:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .typing-dot:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes typing-animation {
+      0%, 60%, 100% {
+        transform: translateY(0);
+        opacity: 0.7;
+      }
+      30% {
+        transform: translateY(-8px);
+        opacity: 1;
+      }
+    }
+
+    .typing-text {
+      font-size: var(--font-sm);
+      color: var(--text-tertiary);
+    }
+
+    /* Input Area */
+    .input-area {
+      position: fixed;
+      bottom: 70px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 600px;
+      background: var(--bg-primary);
+      padding: var(--spacing-md);
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      gap: var(--spacing-sm);
+      align-items: center;
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+      z-index: 50;
+    }
+
+    .input-area input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      font-size: 15px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color var(--transition-fast);
+    }
+
+    .input-area input:focus {
+      border-color: var(--primary);
+    }
+
+    .send-button {
+      background: var(--primary);
+      color: var(--bg-primary);
+      border: none;
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      flex-shrink: 0;
+    }
+
+    .send-button:hover {
+      background: var(--primary-light);
+    }
+
+    .send-button:active {
+      transform: scale(0.95);
+    }
+
+    .send-button:disabled {
+      background: var(--text-disabled);
+      cursor: not-allowed;
+    }
+
+    .send-button .material-icons {
+      font-size: 24px;
+    }
+
+    /* Bottom Navigation */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 600px;
+      background-color: var(--bg-primary);
+      border-top: 1px solid var(--border-color);
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+      display: flex;
+      justify-content: space-around;
+      padding: var(--spacing-sm) 0;
+      z-index: 100;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: var(--spacing-xs);
+      color: var(--text-tertiary);
+      text-decoration: none;
+      cursor: pointer;
+      transition: color var(--transition-fast);
+      min-width: 60px;
+    }
+
+    .nav-item.active {
+      color: var(--primary);
+    }
+
+    .nav-item:hover {
+      color: var(--primary-light);
+    }
+
+    .nav-label {
+      font-size: var(--font-xs);
+      font-weight: 500;
+    }
+
+    /* Sidebar (会話履歴) */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      right: -100%;
+      width: 100%;
+      max-width: 320px;
+      height: 100vh;
+      background-color: var(--bg-primary);
+      box-shadow: var(--shadow-lg);
+      transition: right var(--transition-normal);
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar.active {
+      right: 0;
+    }
+
+    .sidebar-header {
+      padding: var(--spacing-md) var(--spacing-lg);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .sidebar-title {
+      font-weight: 500;
+      font-size: var(--font-lg);
+      color: var(--text-primary);
+    }
+
+    .sidebar-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--spacing-md);
+    }
+
+    .conversation-group {
+      margin-bottom: var(--spacing-lg);
+    }
+
+    .conversation-group-title {
+      font-size: var(--font-xs);
+      font-weight: 500;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      margin-bottom: var(--spacing-sm);
+      padding: 0 var(--spacing-sm);
+    }
+
+    .conversation-item {
+      padding: var(--spacing-sm) var(--spacing-md);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: background-color var(--transition-fast);
+      margin-bottom: var(--spacing-xs);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .conversation-item:hover {
+      background-color: var(--bg-secondary);
+    }
+
+    .conversation-item.active {
+      background-color: rgba(44, 82, 130, 0.1);
+      border-left: 3px solid var(--primary);
+    }
+
+    .conversation-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .conversation-title {
+      font-size: var(--font-sm);
+      font-weight: 500;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 2px;
+    }
+
+    .conversation-preview {
+      font-size: var(--font-xs);
+      color: var(--text-tertiary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .conversation-time {
+      font-size: var(--font-xs);
+      color: var(--text-tertiary);
+      flex-shrink: 0;
+      margin-left: var(--spacing-sm);
+    }
+
+    /* Overlay */
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 150;
+      display: none;
+    }
+
+    .overlay.active {
+      display: block;
+    }
+
+    /* Scrollbar Styles */
+    .chat-history::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .chat-history::-webkit-scrollbar-track {
+      background: var(--bg-tertiary);
+    }
+
+    .chat-history::-webkit-scrollbar-thumb {
+      background: var(--text-tertiary);
+      border-radius: 3px;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 480px) {
+      .quick-prompts {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 375px) {
+      .message-content {
+        font-size: 14px;
+        padding: 10px 14px;
+      }
+
+      .input-area input {
+        font-size: 14px;
+        padding: 10px 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-left">
+      <div class="logo">
+        <span class="material-icons">hub</span>
+        COM:PASS
+      </div>
+      <div class="subtitle">RAGベースAIコーチング</div>
+    </div>
+    <div class="header-right">
+      <button class="icon-button" onclick="startNewChat()" title="新規会話">
+        <span class="material-icons">add_circle_outline</span>
+      </button>
+      <button class="icon-button" onclick="toggleSidebar()" title="会話履歴">
+        <span class="material-icons">history</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Mode Selector -->
+    <div class="mode-selector">
+      <div class="mode-tabs">
+        <button class="mode-tab active" data-mode="problem-solving">
+          <span class="material-icons">psychology</span>
+          <span>課題解決モード</span>
+        </button>
+        <button class="mode-tab" data-mode="learning-support">
+          <span class="material-icons">school</span>
+          <span>学習支援モード</span>
+        </button>
+        <button class="mode-tab" data-mode="planning">
+          <span class="material-icons">assignment</span>
+          <span>計画立案モード</span>
+        </button>
+        <button class="mode-tab" data-mode="companionship">
+          <span class="material-icons">support_agent</span>
+          <span>伴走補助モード</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Chat History Area -->
+    <div class="chat-history" id="chat-history">
+      <!-- Welcome Message (初回表示) -->
+      <div class="welcome-container" id="welcome-message">
+        <div class="welcome-icon material-icons">psychology</div>
+        <h2>課題解決モード</h2>
+        <p>抱えている問題について相談してください。<br>一緒に解決策を考えましょう。</p>
+
+        <div class="quick-prompts" id="quick-prompts">
+          <div class="quick-prompt" onclick="useQuickPrompt('今抱えている問題を整理したいです')">
+            <span class="material-icons">psychology</span>
+            <div class="quick-prompt-title">問題を特定する</div>
+            <div class="quick-prompt-desc">何が課題かを明確に</div>
+          </div>
+
+          <div class="quick-prompt" onclick="useQuickPrompt('この問題の根本原因を分析してください')">
+            <span class="material-icons">analytics</span>
+            <div class="quick-prompt-title">原因を分析する</div>
+            <div class="quick-prompt-desc">なぜ起きているか</div>
+          </div>
+
+          <div class="quick-prompt" onclick="useQuickPrompt('解決策を一緒に考えてください')">
+            <span class="material-icons">lightbulb</span>
+            <div class="quick-prompt-title">解決策を考える</div>
+            <div class="quick-prompt-desc">どう解決するか</div>
+          </div>
+
+          <div class="quick-prompt" onclick="useQuickPrompt('具体的なアクションプランを立てたいです')">
+            <span class="material-icons">assignment</span>
+            <div class="quick-prompt-title">アクションプランを立てる</div>
+            <div class="quick-prompt-desc">次に何をするか</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Message Input Area -->
+    <div class="input-area">
+      <input type="text" id="message-input" placeholder="メッセージを入力..." />
+      <button class="send-button" id="send-button" onclick="sendMessage()" disabled>
+        <span class="material-icons">send</span>
+      </button>
+    </div>
+  </main>
+
+  <!-- Bottom Navigation -->
+  <nav class="bottom-nav">
+    <a href="#" class="nav-item" data-nav="home">
+      <span class="material-icons">home</span>
+      <span class="nav-label">ホーム</span>
+    </a>
+    <a href="#" class="nav-item" data-nav="plan-do">
+      <span class="material-icons">assignment</span>
+      <span class="nav-label">計画/実行</span>
+    </a>
+    <a href="#" class="nav-item" data-nav="check-action">
+      <span class="material-icons">analytics</span>
+      <span class="nav-label">確認/改善</span>
+    </a>
+    <a href="#" class="nav-item active" data-nav="learning">
+      <span class="material-icons">school</span>
+      <span class="nav-label">学習</span>
+    </a>
+    <a href="#" class="nav-item" data-nav="history">
+      <span class="material-icons">history</span>
+      <span class="nav-label">ログ</span>
+    </a>
+  </nav>
+
+  <!-- Sidebar (会話履歴) -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <h3 class="sidebar-title">会話履歴</h3>
+      <button class="icon-button" onclick="toggleSidebar()">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+
+    <div class="sidebar-content">
+      <div class="conversation-group">
+        <div class="conversation-group-title">今日</div>
+
+        <div class="conversation-item active" onclick="loadConversation(1)">
+          <div class="conversation-info">
+            <div class="conversation-title">目標設定について</div>
+            <div class="conversation-preview">今週の目標設定をサポートしてください...</div>
+          </div>
+          <div class="conversation-time">15:30</div>
+        </div>
+      </div>
+
+      <div class="conversation-group">
+        <div class="conversation-group-title">昨日</div>
+
+        <div class="conversation-item" onclick="loadConversation(2)">
+          <div class="conversation-info">
+            <div class="conversation-title">キャリア相談</div>
+            <div class="conversation-preview">将来のキャリアについて考えたい...</div>
+          </div>
+          <div class="conversation-time">18:45</div>
+        </div>
+
+        <div class="conversation-item" onclick="loadConversation(3)">
+          <div class="conversation-info">
+            <div class="conversation-title">モチベーション向上</div>
+            <div class="conversation-preview">最近やる気が出ないので...</div>
+          </div>
+          <div class="conversation-time">12:20</div>
+        </div>
+      </div>
+
+      <div class="conversation-group">
+        <div class="conversation-group-title">今週</div>
+
+        <div class="conversation-item" onclick="loadConversation(4)">
+          <div class="conversation-info">
+            <div class="conversation-title">コーチング理論の学習</div>
+            <div class="conversation-preview">GROWモデルについて教えてください...</div>
+          </div>
+          <div class="conversation-time">月曜日</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay -->
+  <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+  <script>
+    // State Management
+    let conversationMessages = [];
+    let isTyping = false;
+    let currentMode = 'problem-solving';
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+      const input = document.getElementById('message-input');
+      const sendButton = document.getElementById('send-button');
+
+      // Enable send button when input has value
+      input.addEventListener('input', function() {
+        sendButton.disabled = this.value.trim() === '';
+      });
+
+      // Enter key to send
+      input.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && this.value.trim() && !isTyping) {
+          sendMessage();
+        }
+      });
+    });
+
+    // Mode tab switching
+    document.querySelectorAll('.mode-tab').forEach(tab => {
+      tab.addEventListener('click', function() {
+        // Remove active class from all tabs
+        document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+        // Add active class to clicked tab
+        this.classList.add('active');
+
+        // Get selected mode
+        const mode = this.dataset.mode;
+        currentMode = mode;
+        console.log('Selected mode:', mode);
+
+        // Update welcome message based on mode
+        updateWelcomeMessage(mode);
+      });
+    });
+
+    // Function to update welcome message based on selected mode
+    function updateWelcomeMessage(mode) {
+      const welcomeMessages = {
+        'problem-solving': {
+          icon: 'psychology',
+          title: '課題解決モード',
+          description: '抱えている問題について相談してください。<br>一緒に解決策を考えましょう。'
+        },
+        'learning-support': {
+          icon: 'school',
+          title: '学習支援モード',
+          description: 'COMPASS教材の学習をサポートします。<br>どの部分について学びたいですか？'
+        },
+        'planning': {
+          icon: 'assignment',
+          title: '計画立案モード',
+          description: '目標設定や計画づくりをアシストします。<br>どんな目標を立てたいですか？'
+        },
+        'companionship': {
+          icon: 'support_agent',
+          title: '伴走補助モード',
+          description: 'あなたのログを分析して、継続的なサポートをします。<br>進捗状況を確認しましょう。'
+        }
+      };
+
+      const quickPrompts = {
+        'problem-solving': [
+          { icon: 'psychology', title: '問題を特定する', desc: '何が課題かを明確に', prompt: '今抱えている問題を整理したいです' },
+          { icon: 'analytics', title: '原因を分析する', desc: 'なぜ起きているか', prompt: 'この問題の根本原因を分析してください' },
+          { icon: 'lightbulb', title: '解決策を考える', desc: 'どう解決するか', prompt: '解決策を一緒に考えてください' },
+          { icon: 'assignment', title: 'アクションプランを立てる', desc: '次に何をするか', prompt: '具体的なアクションプランを立てたいです' }
+        ],
+        'learning-support': [
+          { icon: 'school', title: 'COMPASS教材について', desc: '教材の使い方を知る', prompt: 'COMPASS教材の効果的な学習方法を教えてください' },
+          { icon: 'psychology', title: 'コーチング理論を学ぶ', desc: '理論を理解する', prompt: 'GROWモデルなどのコーチング理論を学びたいです' },
+          { icon: 'tips_and_updates', title: 'スキル向上のヒント', desc: '実践的なコツ', prompt: 'コーチングスキルを向上させるヒントをください' },
+          { icon: 'event', title: '学習計画を立てる', desc: '計画的に学ぶ', prompt: '効果的な学習計画を一緒に立ててください' }
+        ],
+        'planning': [
+          { icon: 'flag', title: '目標を設定する', desc: 'SMARTな目標作り', prompt: '今週の具体的な目標を設定したいです' },
+          { icon: 'calendar_today', title: '週次計画を立てる', desc: '1週間の計画', prompt: '今週の計画を一緒に立ててください' },
+          { icon: 'checklist', title: 'タスクを整理する', desc: 'やることを明確に', prompt: 'やるべきタスクを整理して優先順位をつけたいです' },
+          { icon: 'priority_high', title: '優先順位を決める', desc: '何から始めるか', prompt: '複数のタスクの優先順位を決めるサポートをしてください' }
+        ],
+        'companionship': [
+          { icon: 'timeline', title: '進捗を振り返る', desc: '最近の成果を確認', prompt: '最近の活動を振り返って進捗を確認したいです' },
+          { icon: 'emoji_events', title: 'モチベーションを上げる', desc: 'やる気を引き出す', prompt: 'モチベーションが下がっているので上げるアドバイスをください' },
+          { icon: 'stars', title: '成果を確認する', desc: '達成したことを見る', prompt: 'これまでの成果を一緒に確認してください' },
+          { icon: 'arrow_forward', title: '次のステップを考える', desc: 'これから何をするか', prompt: '次に取り組むべきことを一緒に考えてください' }
+        ]
+      };
+
+      const welcomeContainer = document.getElementById('welcome-message');
+      if (welcomeContainer && welcomeContainer.style.display !== 'none') {
+        const modeInfo = welcomeMessages[mode];
+        welcomeContainer.querySelector('.welcome-icon').textContent = modeInfo.icon;
+        welcomeContainer.querySelector('h2').textContent = modeInfo.title;
+        welcomeContainer.querySelector('p').innerHTML = modeInfo.description;
+
+        // Update quick prompts
+        const quickPromptsContainer = document.getElementById('quick-prompts');
+        if (quickPromptsContainer) {
+          const prompts = quickPrompts[mode];
+          quickPromptsContainer.innerHTML = prompts.map(p => `
+            <div class="quick-prompt" onclick="useQuickPrompt('${p.prompt}')">
+              <span class="material-icons">${p.icon}</span>
+              <div class="quick-prompt-title">${p.title}</div>
+              <div class="quick-prompt-desc">${p.desc}</div>
+            </div>
+          `).join('');
+        }
+      }
+
+      console.log('Welcome message updated for mode:', mode);
+    }
+
+    // Bottom navigation active state
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', function(e) {
+        e.preventDefault();
+        const navType = this.dataset.nav;
+
+        // Remove active from all items
+        document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+        // Add active to clicked item
+        this.classList.add('active');
+
+        console.log('Navigation clicked:', navType);
+      });
+    });
+
+    // Send Message
+    function sendMessage() {
+      const input = document.getElementById('message-input');
+      const messageText = input.value.trim();
+      const sendButton = document.getElementById('send-button');
+
+      if (messageText === '' || isTyping) return;
+
+      // Hide welcome message
+      const welcomeMessage = document.getElementById('welcome-message');
+      if (welcomeMessage) {
+        welcomeMessage.style.display = 'none';
+      }
+
+      // Add user message
+      addMessage('user', messageText);
+
+      // Clear input
+      input.value = '';
+      sendButton.disabled = true;
+
+      // Show typing indicator
+      showTypingIndicator();
+
+      // Simulate AI response (3-5 seconds)
+      setTimeout(() => {
+        hideTypingIndicator();
+        generateAIResponse(messageText);
+      }, Math.random() * 2000 + 3000);
+    }
+
+    // Add Message
+    function addMessage(role, content, citation = null) {
+      const chatHistory = document.getElementById('chat-history');
+      const message = document.createElement('div');
+      message.className = `message ${role}`;
+
+      const now = new Date();
+      const time = now.getHours() + ':' + String(now.getMinutes()).padStart(2, '0');
+
+      let citationHTML = '';
+      if (citation) {
+        citationHTML = `
+          <div class="citation">
+            <div class="citation-header">
+              <span class="material-icons">auto_awesome</span>
+              <span>引用元</span>
+            </div>
+            <div class="citation-sources">
+              ${citation.map(source => `
+                <span class="source-tag">
+                  <span class="material-icons">${source.icon}</span>
+                  ${source.name}
+                </span>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      message.innerHTML = `
+        <div class="message-content">
+          ${content}
+          ${citationHTML}
+        </div>
+        <div class="message-timestamp">${time}</div>
+      `;
+
+      chatHistory.appendChild(message);
+
+      // Scroll to bottom
+      chatHistory.scrollTop = chatHistory.scrollHeight;
+
+      // Save to conversation
+      conversationMessages.push({ role, content, time });
+    }
+
+    // Show Typing Indicator
+    function showTypingIndicator() {
+      isTyping = true;
+      const chatHistory = document.getElementById('chat-history');
+      const indicator = document.createElement('div');
+      indicator.id = 'typing-indicator';
+      indicator.className = 'typing-indicator';
+      indicator.innerHTML = `
+        <div class="typing-dots">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        </div>
+        <span class="typing-text">AIが入力中...</span>
+      `;
+      chatHistory.appendChild(indicator);
+      chatHistory.scrollTop = chatHistory.scrollHeight;
+    }
+
+    // Hide Typing Indicator
+    function hideTypingIndicator() {
+      isTyping = false;
+      const indicator = document.getElementById('typing-indicator');
+      if (indicator) {
+        indicator.remove();
+      }
+    }
+
+    // Generate AI Response
+    function generateAIResponse(userMessage) {
+      let response = '';
+      let citation = null;
+
+      if (userMessage.includes('目標')) {
+        response = 'ご相談ありがとうございます。目標設定は、あなたの成長において非常に重要なステップですね。<br><br>SMART原則（Specific, Measurable, Achievable, Relevant, Time-bound）に基づいて目標を設定することで、より明確で達成可能な目標になります。<br><br>具体的に、今週はどのような目標を立てたいとお考えですか？';
+        citation = [
+          { name: 'システムRAG', icon: 'book' },
+          { name: 'ユーザーRAG', icon: 'person' }
+        ];
+      } else if (userMessage.includes('振り返り')) {
+        response = '振り返りの時間を作られたのは素晴らしいですね。<br><br>まず、今週達成できたことを3つ挙げてみましょう。小さなことでも構いません。その後、改善したい点についても考えてみましょう。<br><br>どんなことを振り返りたいですか？';
+        citation = [
+          { name: 'システムRAG', icon: 'book' }
+        ];
+      } else if (userMessage.includes('モチベーション')) {
+        response = 'モチベーションについてお話しいただき、ありがとうございます。<br><br>モチベーションは変動するものですが、それを理解し、対処することが大切です。まず、今の状態を0〜10のスケールで表すとどのくらいでしょうか？<br><br>また、過去にモチベーションが高かった時のことを思い出してみてください。その時はどんな状況でしたか？';
+        citation = [
+          { name: 'システムRAG', icon: 'book' },
+          { name: 'ユーザーRAG', icon: 'person' }
+        ];
+      } else if (userMessage.includes('キャリア')) {
+        response = 'キャリアについて考える時間を持たれたのは素晴らしいことですね。<br><br>長期的な視点と短期的な視点の両方から考えることが大切です。まず、5年後にどんな自分でありたいかをイメージしてみましょう。<br><br>どのような分野で活躍したいとお考えですか？';
+        citation = [
+          { name: 'システムRAG', icon: 'book' }
+        ];
+      } else {
+        response = 'ご質問ありがとうございます。<br><br>あなたの成長をサポートできることを嬉しく思います。より具体的にお話しいただけますか？どんな状況で、何を達成したいとお考えですか？<br><br>一緒に考えていきましょう。';
+      }
+
+      addMessage('assistant', response, citation);
+    }
+
+    // Use Quick Prompt
+    function useQuickPrompt(prompt) {
+      const input = document.getElementById('message-input');
+      input.value = prompt;
+      document.getElementById('send-button').disabled = false;
+      input.focus();
+    }
+
+    // Toggle Sidebar
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('overlay');
+      sidebar.classList.toggle('active');
+      overlay.classList.toggle('active');
+    }
+
+    // Load Conversation
+    function loadConversation(id) {
+      alert('会話 #' + id + ' を読み込みます（実装時はAPI呼び出し）');
+      toggleSidebar();
+    }
+
+    // Start New Chat
+    function startNewChat() {
+      if (confirm('新しい会話を開始しますか？現在の会話は保存されます。')) {
+        conversationMessages = [];
+        const chatHistory = document.getElementById('chat-history');
+
+        // Get current mode info
+        const modeMessages = {
+          'problem-solving': {
+            icon: 'psychology',
+            title: '課題解決モード',
+            description: '抱えている問題について相談してください。<br>一緒に解決策を考えましょう。'
+          },
+          'learning-support': {
+            icon: 'school',
+            title: '学習支援モード',
+            description: 'COMPASS教材の学習をサポートします。<br>どの部分について学びたいですか？'
+          },
+          'planning': {
+            icon: 'assignment',
+            title: '計画立案モード',
+            description: '目標設定や計画づくりをアシストします。<br>どんな目標を立てたいですか？'
+          },
+          'companionship': {
+            icon: 'support_agent',
+            title: '伴走補助モード',
+            description: 'あなたのログを分析して、継続的なサポートをします。<br>進捗状況を確認しましょう。'
+          }
+        };
+
+        const quickPrompts = {
+          'problem-solving': [
+            { icon: 'psychology', title: '問題を特定する', desc: '何が課題かを明確に', prompt: '今抱えている問題を整理したいです' },
+            { icon: 'analytics', title: '原因を分析する', desc: 'なぜ起きているか', prompt: 'この問題の根本原因を分析してください' },
+            { icon: 'lightbulb', title: '解決策を考える', desc: 'どう解決するか', prompt: '解決策を一緒に考えてください' },
+            { icon: 'assignment', title: 'アクションプランを立てる', desc: '次に何をするか', prompt: '具体的なアクションプランを立てたいです' }
+          ],
+          'learning-support': [
+            { icon: 'school', title: 'COMPASS教材について', desc: '教材の使い方を知る', prompt: 'COMPASS教材の効果的な学習方法を教えてください' },
+            { icon: 'psychology', title: 'コーチング理論を学ぶ', desc: '理論を理解する', prompt: 'GROWモデルなどのコーチング理論を学びたいです' },
+            { icon: 'tips_and_updates', title: 'スキル向上のヒント', desc: '実践的なコツ', prompt: 'コーチングスキルを向上させるヒントをください' },
+            { icon: 'event', title: '学習計画を立てる', desc: '計画的に学ぶ', prompt: '効果的な学習計画を一緒に立ててください' }
+          ],
+          'planning': [
+            { icon: 'flag', title: '目標を設定する', desc: 'SMARTな目標作り', prompt: '今週の具体的な目標を設定したいです' },
+            { icon: 'calendar_today', title: '週次計画を立てる', desc: '1週間の計画', prompt: '今週の計画を一緒に立ててください' },
+            { icon: 'checklist', title: 'タスクを整理する', desc: 'やることを明確に', prompt: 'やるべきタスクを整理して優先順位をつけたいです' },
+            { icon: 'priority_high', title: '優先順位を決める', desc: '何から始めるか', prompt: '複数のタスクの優先順位を決めるサポートをしてください' }
+          ],
+          'companionship': [
+            { icon: 'timeline', title: '進捗を振り返る', desc: '最近の成果を確認', prompt: '最近の活動を振り返って進捗を確認したいです' },
+            { icon: 'emoji_events', title: 'モチベーションを上げる', desc: 'やる気を引き出す', prompt: 'モチベーションが下がっているので上げるアドバイスをください' },
+            { icon: 'stars', title: '成果を確認する', desc: '達成したことを見る', prompt: 'これまでの成果を一緒に確認してください' },
+            { icon: 'arrow_forward', title: '次のステップを考える', desc: 'これから何をするか', prompt: '次に取り組むべきことを一緒に考えてください' }
+          ]
+        };
+
+        const modeInfo = modeMessages[currentMode];
+        const prompts = quickPrompts[currentMode];
+
+        chatHistory.innerHTML = `
+          <div class="welcome-container" id="welcome-message">
+            <div class="welcome-icon material-icons">${modeInfo.icon}</div>
+            <h2>${modeInfo.title}</h2>
+            <p>${modeInfo.description}</p>
+
+            <div class="quick-prompts" id="quick-prompts">
+              ${prompts.map(p => `
+                <div class="quick-prompt" onclick="useQuickPrompt('${p.prompt}')">
+                  <span class="material-icons">${p.icon}</span>
+                  <div class="quick-prompt-title">${p.title}</div>
+                  <div class="quick-prompt-desc">${p.desc}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    // Demo: Auto-scroll to bottom on load
+    window.addEventListener('load', function() {
+      const chatHistory = document.getElementById('chat-history');
+      chatHistory.scrollTop = chatHistory.scrollHeight;
+    });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>会話履歴 - RAGベースAIコーチング</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+  <!-- Material Icons -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+  <style>
+    /* CSS Variables - Design System (Mental-Base完全統一) */
+    :root {
+      /* Colors */
+      --primary: #2c5282;
+      --primary-light: #3182ce;
+      --primary-dark: #1a365d;
+      --secondary: #4299e1;
+      --secondary-light: #63b3ed;
+      --secondary-dark: #2b6cb0;
+
+      --success: #48bb78;
+      --success-light: #68d391;
+      --success-dark: #2f855a;
+
+      --warning: #ed8936;
+      --warning-light: #f6ad55;
+      --warning-dark: #c05621;
+
+      --danger: #f56565;
+      --danger-light: #fc8181;
+      --danger-dark: #c53030;
+
+      --info: #4299e1;
+      --info-light: #63b3ed;
+      --info-dark: #2b6cb0;
+
+      /* Neutral Colors */
+      --bg-primary: #ffffff;
+      --bg-secondary: #f7fafc;
+      --bg-tertiary: #edf2f7;
+
+      --text-primary: #2d3748;
+      --text-secondary: #4a5568;
+      --text-tertiary: #718096;
+      --text-disabled: #a0aec0;
+
+      --border-color: #e2e8f0;
+      --border-dark: #cbd5e0;
+
+      /* Spacing */
+      --spacing-xs: 4px;
+      --spacing-sm: 8px;
+      --spacing-md: 16px;
+      --spacing-lg: 24px;
+      --spacing-xl: 32px;
+      --spacing-2xl: 48px;
+
+      /* Border Radius */
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+      --radius-full: 9999px;
+
+      /* Shadows */
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+      /* Font Sizes */
+      --font-xs: 12px;
+      --font-sm: 14px;
+      --font-md: 16px;
+      --font-lg: 18px;
+      --font-xl: 20px;
+      --font-2xl: 24px;
+
+      /* Transitions */
+      --transition-fast: 150ms ease-in-out;
+      --transition-normal: 250ms ease-in-out;
+      --transition-slow: 350ms ease-in-out;
+    }
+
+    /* Reset & Base Styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Roboto', 'Noto Sans JP', sans-serif;
+      background-color: var(--bg-secondary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      max-width: 600px;
+      margin: 0 auto;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    .header {
+      position: sticky;
+      top: 0;
+      background-color: var(--bg-primary);
+      border-bottom: 1px solid var(--border-color);
+      padding: var(--spacing-md);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: var(--shadow-sm);
+      z-index: 100;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-md);
+    }
+
+    .back-button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: var(--spacing-sm);
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color var(--transition-fast);
+      color: var(--text-secondary);
+    }
+
+    .back-button:hover {
+      background-color: var(--bg-tertiary);
+    }
+
+    .page-title {
+      font-size: var(--font-xl);
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      overflow-y: auto;
+      padding-bottom: 70px;
+    }
+
+    /* Conversation List */
+    .conversation-list {
+      padding: var(--spacing-md);
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-md);
+    }
+
+    .conversation-group {
+      margin-bottom: var(--spacing-lg);
+    }
+
+    .conversation-group-title {
+      font-size: var(--font-sm);
+      font-weight: 600;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: var(--spacing-md);
+      padding: 0 var(--spacing-xs);
+    }
+
+    .conversation-card {
+      background-color: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: var(--spacing-md);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-sm);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .conversation-card:hover {
+      border-color: var(--primary);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+
+    .conversation-card:active {
+      transform: translateY(0);
+    }
+
+    .conversation-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: var(--spacing-md);
+    }
+
+    .conversation-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .conversation-title {
+      font-size: var(--font-md);
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: var(--spacing-xs);
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-xs);
+    }
+
+    .conversation-title .material-icons {
+      font-size: 20px;
+      color: var(--primary);
+    }
+
+    .conversation-preview {
+      font-size: var(--font-sm);
+      color: var(--text-secondary);
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .conversation-meta {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-md);
+      margin-top: var(--spacing-xs);
+      font-size: var(--font-xs);
+      color: var(--text-tertiary);
+    }
+
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-xs);
+    }
+
+    .meta-item .material-icons {
+      font-size: 14px;
+    }
+
+    .conversation-actions {
+      display: flex;
+      gap: var(--spacing-xs);
+      flex-shrink: 0;
+    }
+
+    .action-button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: var(--spacing-xs);
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--transition-fast);
+      color: var(--text-tertiary);
+      width: 32px;
+      height: 32px;
+    }
+
+    .action-button:hover {
+      background-color: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+
+    .action-button.delete:hover {
+      background-color: rgba(245, 101, 101, 0.1);
+      color: var(--danger);
+    }
+
+    /* Empty State */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: var(--spacing-2xl);
+      text-align: center;
+      min-height: 400px;
+    }
+
+    .empty-state .material-icons {
+      font-size: 80px;
+      color: var(--text-disabled);
+      margin-bottom: var(--spacing-lg);
+    }
+
+    .empty-state h2 {
+      font-size: var(--font-xl);
+      color: var(--text-secondary);
+      margin-bottom: var(--spacing-sm);
+      font-weight: 500;
+    }
+
+    .empty-state p {
+      font-size: var(--font-sm);
+      color: var(--text-tertiary);
+      margin-bottom: var(--spacing-xl);
+    }
+
+    .empty-state .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--spacing-xs);
+      padding: var(--spacing-md) var(--spacing-xl);
+      background-color: var(--primary);
+      color: var(--bg-primary);
+      border: none;
+      border-radius: var(--radius-full);
+      font-size: var(--font-md);
+      font-weight: 500;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .empty-state .btn-primary:hover {
+      background-color: var(--primary-light);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+
+    .empty-state .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    /* Bottom Navigation */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 600px;
+      background-color: var(--bg-primary);
+      border-top: 1px solid var(--border-color);
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+      display: flex;
+      justify-content: space-around;
+      padding: var(--spacing-sm) 0;
+      z-index: 100;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: var(--spacing-xs);
+      color: var(--text-tertiary);
+      text-decoration: none;
+      cursor: pointer;
+      transition: color var(--transition-fast);
+      min-width: 60px;
+    }
+
+    .nav-item.active {
+      color: var(--primary);
+    }
+
+    .nav-item:hover {
+      color: var(--primary-light);
+    }
+
+    .nav-label {
+      font-size: var(--font-xs);
+      font-weight: 500;
+    }
+
+    /* Modal (削除確認) */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: var(--spacing-md);
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal {
+      background-color: var(--bg-primary);
+      border-radius: var(--radius-lg);
+      padding: var(--spacing-xl);
+      max-width: 400px;
+      width: 100%;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-md);
+      margin-bottom: var(--spacing-lg);
+    }
+
+    .modal-header .material-icons {
+      font-size: 32px;
+      color: var(--danger);
+    }
+
+    .modal-title {
+      font-size: var(--font-lg);
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .modal-body {
+      font-size: var(--font-sm);
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: var(--spacing-xl);
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: var(--spacing-md);
+      justify-content: flex-end;
+    }
+
+    .btn {
+      padding: var(--spacing-sm) var(--spacing-lg);
+      border: none;
+      border-radius: var(--radius-md);
+      font-size: var(--font-sm);
+      font-weight: 500;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .btn-cancel {
+      background-color: var(--bg-secondary);
+      color: var(--text-primary);
+    }
+
+    .btn-cancel:hover {
+      background-color: var(--bg-tertiary);
+    }
+
+    .btn-delete {
+      background-color: var(--danger);
+      color: var(--bg-primary);
+    }
+
+    .btn-delete:hover {
+      background-color: var(--danger-dark);
+    }
+
+    /* Scrollbar Styles */
+    .main-content::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .main-content::-webkit-scrollbar-track {
+      background: var(--bg-tertiary);
+    }
+
+    .main-content::-webkit-scrollbar-thumb {
+      background: var(--text-tertiary);
+      border-radius: 3px;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 480px) {
+      .conversation-meta {
+        flex-wrap: wrap;
+      }
+
+      .modal {
+        padding: var(--spacing-lg);
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-left">
+      <button class="back-button" onclick="goBack()" title="戻る">
+        <span class="material-icons">arrow_back</span>
+      </button>
+      <h1 class="page-title">会話履歴</h1>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="conversation-list">
+
+      <!-- 今日 -->
+      <div class="conversation-group">
+        <h2 class="conversation-group-title">今日</h2>
+
+        <div class="conversation-card" onclick="viewConversation(1)">
+          <div class="conversation-header">
+            <div class="conversation-info">
+              <div class="conversation-title">
+                <span class="material-icons">psychology</span>
+                目標設定について
+              </div>
+              <div class="conversation-preview">
+                今週の目標設定をサポートしてください。具体的にSMART原則に基づいて目標を立てたいと思っています...
+              </div>
+              <div class="conversation-meta">
+                <div class="meta-item">
+                  <span class="material-icons">schedule</span>
+                  15:30
+                </div>
+                <div class="meta-item">
+                  <span class="material-icons">chat_bubble_outline</span>
+                  12メッセージ
+                </div>
+              </div>
+            </div>
+            <div class="conversation-actions">
+              <button class="action-button delete" onclick="confirmDelete(event, 1)" title="削除">
+                <span class="material-icons">delete_outline</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="conversation-card" onclick="viewConversation(2)">
+          <div class="conversation-header">
+            <div class="conversation-info">
+              <div class="conversation-title">
+                <span class="material-icons">school</span>
+                コーチング理論の学習
+              </div>
+              <div class="conversation-preview">
+                GROWモデルについて教えてください。具体的にどのような場面で活用できるのか知りたいです...
+              </div>
+              <div class="conversation-meta">
+                <div class="meta-item">
+                  <span class="material-icons">schedule</span>
+                  09:15
+                </div>
+                <div class="meta-item">
+                  <span class="material-icons">chat_bubble_outline</span>
+                  8メッセージ
+                </div>
+              </div>
+            </div>
+            <div class="conversation-actions">
+              <button class="action-button delete" onclick="confirmDelete(event, 2)" title="削除">
+                <span class="material-icons">delete_outline</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 昨日 -->
+      <div class="conversation-group">
+        <h2 class="conversation-group-title">昨日</h2>
+
+        <div class="conversation-card" onclick="viewConversation(3)">
+          <div class="conversation-header">
+            <div class="conversation-info">
+              <div class="conversation-title">
+                <span class="material-icons">assignment</span>
+                キャリア相談
+              </div>
+              <div class="conversation-preview">
+                将来のキャリアについて考えたいです。5年後にどのような自分でありたいか、一緒に整理したいと思います...
+              </div>
+              <div class="conversation-meta">
+                <div class="meta-item">
+                  <span class="material-icons">schedule</span>
+                  18:45
+                </div>
+                <div class="meta-item">
+                  <span class="material-icons">chat_bubble_outline</span>
+                  15メッセージ
+                </div>
+              </div>
+            </div>
+            <div class="conversation-actions">
+              <button class="action-button delete" onclick="confirmDelete(event, 3)" title="削除">
+                <span class="material-icons">delete_outline</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="conversation-card" onclick="viewConversation(4)">
+          <div class="conversation-header">
+            <div class="conversation-info">
+              <div class="conversation-title">
+                <span class="material-icons">support_agent</span>
+                モチベーション向上
+              </div>
+              <div class="conversation-preview">
+                最近やる気が出ないので、モチベーションを上げる方法について相談したいです...
+              </div>
+              <div class="conversation-meta">
+                <div class="meta-item">
+                  <span class="material-icons">schedule</span>
+                  12:20
+                </div>
+                <div class="meta-item">
+                  <span class="material-icons">chat_bubble_outline</span>
+                  10メッセージ
+                </div>
+              </div>
+            </div>
+            <div class="conversation-actions">
+              <button class="action-button delete" onclick="confirmDelete(event, 4)" title="削除">
+                <span class="material-icons">delete_outline</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 今週 -->
+      <div class="conversation-group">
+        <h2 class="conversation-group-title">今週</h2>
+
+        <div class="conversation-card" onclick="viewConversation(5)">
+          <div class="conversation-header">
+            <div class="conversation-info">
+              <div class="conversation-title">
+                <span class="material-icons">psychology</span>
+                問題解決のサポート
+              </div>
+              <div class="conversation-preview">
+                プロジェクトで直面している問題について、根本原因を分析して解決策を考えたいです...
+              </div>
+              <div class="conversation-meta">
+                <div class="meta-item">
+                  <span class="material-icons">schedule</span>
+                  月曜日 14:30
+                </div>
+                <div class="meta-item">
+                  <span class="material-icons">chat_bubble_outline</span>
+                  20メッセージ
+                </div>
+              </div>
+            </div>
+            <div class="conversation-actions">
+              <button class="action-button delete" onclick="confirmDelete(event, 5)" title="削除">
+                <span class="material-icons">delete_outline</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="conversation-card" onclick="viewConversation(6)">
+          <div class="conversation-header">
+            <div class="conversation-info">
+              <div class="conversation-title">
+                <span class="material-icons">school</span>
+                学習計画の作成
+              </div>
+              <div class="conversation-preview">
+                効果的な学習計画を一緒に立てたいです。コーチング理論をどのように学んでいけばよいか...
+              </div>
+              <div class="conversation-meta">
+                <div class="meta-item">
+                  <span class="material-icons">schedule</span>
+                  月曜日 10:00
+                </div>
+                <div class="meta-item">
+                  <span class="material-icons">chat_bubble_outline</span>
+                  9メッセージ
+                </div>
+              </div>
+            </div>
+            <div class="conversation-actions">
+              <button class="action-button delete" onclick="confirmDelete(event, 6)" title="削除">
+                <span class="material-icons">delete_outline</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Empty State (会話履歴がない場合) -->
+    <!--
+    <div class="empty-state">
+      <span class="material-icons">chat_bubble_outline</span>
+      <h2>会話履歴がありません</h2>
+      <p>まだ会話を開始していません。<br>最初の会話を始めましょう。</p>
+      <button class="btn-primary" onclick="startNewChat()">
+        <span class="material-icons">add_circle_outline</span>
+        新しい会話を開始
+      </button>
+    </div>
+    -->
+  </main>
+
+  <!-- Bottom Navigation -->
+  <nav class="bottom-nav">
+    <a href="#" class="nav-item" data-nav="home">
+      <span class="material-icons">home</span>
+      <span class="nav-label">ホーム</span>
+    </a>
+    <a href="#" class="nav-item" data-nav="plan-do">
+      <span class="material-icons">assignment</span>
+      <span class="nav-label">計画/実行</span>
+    </a>
+    <a href="#" class="nav-item" data-nav="check-action">
+      <span class="material-icons">analytics</span>
+      <span class="nav-label">確認/改善</span>
+    </a>
+    <a href="#" class="nav-item" data-nav="learning">
+      <span class="material-icons">school</span>
+      <span class="nav-label">学習</span>
+    </a>
+    <a href="#" class="nav-item active" data-nav="history">
+      <span class="material-icons">history</span>
+      <span class="nav-label">ログ</span>
+    </a>
+  </nav>
+
+  <!-- Delete Confirmation Modal -->
+  <div class="modal-overlay" id="delete-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="material-icons">warning</span>
+        <h3 class="modal-title">会話を削除</h3>
+      </div>
+      <div class="modal-body">
+        この会話を削除してもよろしいですか？<br>
+        削除した会話は復元できません。
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-cancel" onclick="closeDeleteModal()">キャンセル</button>
+        <button class="btn btn-delete" onclick="deleteConversation()">削除する</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let selectedConversationId = null;
+
+    // Bottom navigation active state
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', function(e) {
+        e.preventDefault();
+        const navType = this.dataset.nav;
+
+        // Remove active from all items
+        document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+        // Add active to clicked item
+        this.classList.add('active');
+
+        console.log('Navigation clicked:', navType);
+      });
+    });
+
+    // Go back
+    function goBack() {
+      console.log('Going back to chat');
+      window.history.back();
+    }
+
+    // View conversation
+    function viewConversation(id) {
+      console.log('Viewing conversation:', id);
+      // TODO: 実装時はAPIで会話詳細を取得してチャット画面に遷移
+      alert('会話 #' + id + ' を表示します（実装時はAPIで会話を読み込みます）');
+    }
+
+    // Confirm delete
+    function confirmDelete(event, id) {
+      event.stopPropagation(); // カードのクリックイベントを防ぐ
+      selectedConversationId = id;
+      const modal = document.getElementById('delete-modal');
+      modal.classList.add('active');
+      console.log('Confirming delete for conversation:', id);
+    }
+
+    // Close delete modal
+    function closeDeleteModal() {
+      const modal = document.getElementById('delete-modal');
+      modal.classList.remove('active');
+      selectedConversationId = null;
+    }
+
+    // Delete conversation
+    function deleteConversation() {
+      console.log('Deleting conversation:', selectedConversationId);
+      // TODO: 実装時はDELETE /conversations/{id} APIを呼び出す
+      alert('会話 #' + selectedConversationId + ' を削除しました（実装時はAPIで削除します）');
+      closeDeleteModal();
+
+      // UIから削除（デモ用）
+      const conversationCard = event.target.closest('.conversation-card');
+      if (conversationCard) {
+        conversationCard.remove();
+      }
+    }
+
+    // Start new chat
+    function startNewChat() {
+      console.log('Starting new chat');
+      // TODO: 実装時はチャット画面に遷移
+      alert('新しい会話を開始します（実装時はチャット画面に遷移します）');
+    }
+
+    // Close modal when clicking overlay
+    document.getElementById('delete-modal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        closeDeleteModal();
+      }
+    });
+  </script>
+
+</body>
+</html>

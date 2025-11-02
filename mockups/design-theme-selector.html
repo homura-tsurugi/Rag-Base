@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RAG-Base AIコーチングbot - デザインテーマセレクター</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans JP', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      color: white;
+      margin-bottom: 30px;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+
+    .header p {
+      font-size: 1.1rem;
+      opacity: 0.95;
+    }
+
+    .theme-selector {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .theme-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 3px solid transparent;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .theme-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+
+    .theme-card.active {
+      border-color: #667eea;
+      box-shadow: 0 8px 30px rgba(102, 126, 234, 0.4);
+    }
+
+    .theme-name {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .theme-description {
+      font-size: 0.95rem;
+      color: #666;
+      margin-bottom: 15px;
+      line-height: 1.5;
+    }
+
+    .color-palette {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+
+    .color-swatch {
+      width: 50px;
+      height: 50px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      position: relative;
+      cursor: help;
+    }
+
+    .color-swatch:hover::after {
+      content: attr(data-label);
+      position: absolute;
+      bottom: -30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      white-space: nowrap;
+      z-index: 10;
+    }
+
+    .typography-info {
+      font-size: 0.85rem;
+      color: #888;
+      padding: 10px;
+      background: #f8f9fa;
+      border-radius: 6px;
+    }
+
+    .preview-container {
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+    }
+
+    .preview-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .preview-header h2 {
+      font-size: 2rem;
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    .preview-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .tab-button {
+      padding: 12px 24px;
+      border: 2px solid #ddd;
+      background: white;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .tab-button:hover {
+      background: #f8f9fa;
+    }
+
+    .tab-button.active {
+      background: #667eea;
+      color: white;
+      border-color: #667eea;
+    }
+
+    .preview-content {
+      display: none;
+    }
+
+    .preview-content.active {
+      display: block;
+    }
+
+    /* Theme 1: Calm Ocean */
+    .theme-calm-ocean .chat-interface {
+      max-width: 800px;
+      margin: 0 auto;
+      background: linear-gradient(135deg, #e0f2f7 0%, #f0f9ff 100%);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+    }
+
+    .theme-calm-ocean .chat-header {
+      background: linear-gradient(135deg, #0277bd 0%, #01579b 100%);
+      color: white;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .theme-calm-ocean .chat-avatar {
+      width: 50px;
+      height: 50px;
+      background: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+
+    .theme-calm-ocean .chat-messages {
+      padding: 25px;
+      min-height: 400px;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+
+    .theme-calm-ocean .message {
+      margin-bottom: 20px;
+      display: flex;
+      gap: 12px;
+    }
+
+    .theme-calm-ocean .message.user {
+      flex-direction: row-reverse;
+    }
+
+    .theme-calm-ocean .message-bubble {
+      max-width: 70%;
+      padding: 14px 18px;
+      border-radius: 18px;
+      line-height: 1.5;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .theme-calm-ocean .message.assistant .message-bubble {
+      background: white;
+      color: #263238;
+      border: 1px solid #b3e5fc;
+    }
+
+    .theme-calm-ocean .message.user .message-bubble {
+      background: #0277bd;
+      color: white;
+    }
+
+    .theme-calm-ocean .chat-input-area {
+      padding: 20px;
+      background: white;
+      border-top: 1px solid #b3e5fc;
+      display: flex;
+      gap: 12px;
+    }
+
+    .theme-calm-ocean .chat-input {
+      flex: 1;
+      padding: 14px 18px;
+      border: 2px solid #b3e5fc;
+      border-radius: 25px;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+
+    .theme-calm-ocean .chat-input:focus {
+      border-color: #0277bd;
+    }
+
+    .theme-calm-ocean .send-button {
+      padding: 14px 30px;
+      background: linear-gradient(135deg, #0277bd 0%, #01579b 100%);
+      color: white;
+      border: none;
+      border-radius: 25px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .theme-calm-ocean .send-button:hover {
+      transform: scale(1.05);
+    }
+
+    /* Theme 2: Warm Sunset */
+    .theme-warm-sunset .chat-interface {
+      max-width: 800px;
+      margin: 0 auto;
+      background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 10px 40px rgba(255,111,0,0.15);
+    }
+
+    .theme-warm-sunset .chat-header {
+      background: linear-gradient(135deg, #ff6f00 0%, #e65100 100%);
+      color: white;
+      padding: 22px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      box-shadow: 0 4px 15px rgba(255,111,0,0.2);
+    }
+
+    .theme-warm-sunset .chat-avatar {
+      width: 55px;
+      height: 55px;
+      background: #fff3e0;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .theme-warm-sunset .chat-messages {
+      padding: 28px;
+      min-height: 400px;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+
+    .theme-warm-sunset .message {
+      margin-bottom: 22px;
+      display: flex;
+      gap: 14px;
+    }
+
+    .theme-warm-sunset .message.user {
+      flex-direction: row-reverse;
+    }
+
+    .theme-warm-sunset .message-bubble {
+      max-width: 70%;
+      padding: 16px 20px;
+      border-radius: 20px;
+      line-height: 1.6;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+    }
+
+    .theme-warm-sunset .message.assistant .message-bubble {
+      background: white;
+      color: #3e2723;
+      border-left: 4px solid #ff6f00;
+    }
+
+    .theme-warm-sunset .message.user .message-bubble {
+      background: linear-gradient(135deg, #ff6f00 0%, #e65100 100%);
+      color: white;
+    }
+
+    .theme-warm-sunset .chat-input-area {
+      padding: 22px;
+      background: white;
+      border-top: 2px solid #ffe0b2;
+      display: flex;
+      gap: 12px;
+    }
+
+    .theme-warm-sunset .chat-input {
+      flex: 1;
+      padding: 16px 20px;
+      border: 2px solid #ffe0b2;
+      border-radius: 30px;
+      font-size: 1rem;
+      outline: none;
+      transition: all 0.3s;
+    }
+
+    .theme-warm-sunset .chat-input:focus {
+      border-color: #ff6f00;
+      box-shadow: 0 0 0 3px rgba(255,111,0,0.1);
+    }
+
+    .theme-warm-sunset .send-button {
+      padding: 16px 32px;
+      background: linear-gradient(135deg, #ff6f00 0%, #e65100 100%);
+      color: white;
+      border: none;
+      border-radius: 30px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 4px 15px rgba(255,111,0,0.3);
+    }
+
+    .theme-warm-sunset .send-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(255,111,0,0.4);
+    }
+
+    /* Theme 3: Forest Green */
+    .theme-forest-green .chat-interface {
+      max-width: 800px;
+      margin: 0 auto;
+      background: linear-gradient(135deg, #f1f8f4 0%, #e8f5e9 100%);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 8px 30px rgba(27,94,32,0.12);
+    }
+
+    .theme-forest-green .chat-header {
+      background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);
+      color: white;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .theme-forest-green .chat-avatar {
+      width: 52px;
+      height: 52px;
+      background: #c8e6c9;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+    }
+
+    .theme-forest-green .chat-messages {
+      padding: 26px;
+      min-height: 400px;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+
+    .theme-forest-green .message {
+      margin-bottom: 20px;
+      display: flex;
+      gap: 12px;
+    }
+
+    .theme-forest-green .message.user {
+      flex-direction: row-reverse;
+    }
+
+    .theme-forest-green .message-bubble {
+      max-width: 70%;
+      padding: 15px 19px;
+      border-radius: 16px;
+      line-height: 1.6;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    }
+
+    .theme-forest-green .message.assistant .message-bubble {
+      background: white;
+      color: #1b5e20;
+      border: 2px solid #c8e6c9;
+    }
+
+    .theme-forest-green .message.user .message-bubble {
+      background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);
+      color: white;
+    }
+
+    .theme-forest-green .citation {
+      margin-top: 10px;
+      padding: 8px 12px;
+      background: #e8f5e9;
+      border-left: 3px solid #2e7d32;
+      font-size: 0.85rem;
+      color: #1b5e20;
+      border-radius: 4px;
+    }
+
+    .theme-forest-green .chat-input-area {
+      padding: 20px;
+      background: white;
+      border-top: 2px solid #c8e6c9;
+      display: flex;
+      gap: 12px;
+    }
+
+    .theme-forest-green .chat-input {
+      flex: 1;
+      padding: 15px 19px;
+      border: 2px solid #c8e6c9;
+      border-radius: 24px;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+
+    .theme-forest-green .chat-input:focus {
+      border-color: #2e7d32;
+    }
+
+    .theme-forest-green .send-button {
+      padding: 15px 30px;
+      background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);
+      color: white;
+      border: none;
+      border-radius: 24px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .theme-forest-green .send-button:hover {
+      transform: scale(1.05);
+    }
+
+    /* Theme 4: Lavender Purple */
+    .theme-lavender-purple .chat-interface {
+      max-width: 800px;
+      margin: 0 auto;
+      background: linear-gradient(135deg, #f3e5f5 0%, #fce4ec 100%);
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 12px 40px rgba(123,31,162,0.15);
+    }
+
+    .theme-lavender-purple .chat-header {
+      background: linear-gradient(135deg, #7b1fa2 0%, #4a148c 100%);
+      color: white;
+      padding: 24px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      box-shadow: 0 4px 15px rgba(123,31,162,0.25);
+    }
+
+    .theme-lavender-purple .chat-avatar {
+      width: 58px;
+      height: 58px;
+      background: linear-gradient(135deg, #e1bee7 0%, #f8bbd0 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+    }
+
+    .theme-lavender-purple .chat-messages {
+      padding: 30px;
+      min-height: 400px;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+
+    .theme-lavender-purple .message {
+      margin-bottom: 24px;
+      display: flex;
+      gap: 15px;
+      animation: fadeInUp 0.4s ease;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .theme-lavender-purple .message.user {
+      flex-direction: row-reverse;
+    }
+
+    .theme-lavender-purple .message-bubble {
+      max-width: 70%;
+      padding: 18px 22px;
+      border-radius: 22px;
+      line-height: 1.7;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+      position: relative;
+    }
+
+    .theme-lavender-purple .message.assistant .message-bubble {
+      background: white;
+      color: #4a148c;
+      border: 2px solid #e1bee7;
+    }
+
+    .theme-lavender-purple .message.assistant .message-bubble::before {
+      content: '💜';
+      position: absolute;
+      top: -8px;
+      left: 20px;
+      background: white;
+      padding: 0 5px;
+      font-size: 1.2rem;
+    }
+
+    .theme-lavender-purple .message.user .message-bubble {
+      background: linear-gradient(135deg, #7b1fa2 0%, #4a148c 100%);
+      color: white;
+    }
+
+    .theme-lavender-purple .citation {
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: linear-gradient(135deg, #f3e5f5 0%, #fce4ec 100%);
+      border-left: 4px solid #7b1fa2;
+      font-size: 0.85rem;
+      color: #4a148c;
+      border-radius: 6px;
+    }
+
+    .theme-lavender-purple .chat-input-area {
+      padding: 24px;
+      background: white;
+      border-top: 2px solid #e1bee7;
+      display: flex;
+      gap: 14px;
+    }
+
+    .theme-lavender-purple .chat-input {
+      flex: 1;
+      padding: 17px 22px;
+      border: 2px solid #e1bee7;
+      border-radius: 28px;
+      font-size: 1rem;
+      outline: none;
+      transition: all 0.3s;
+    }
+
+    .theme-lavender-purple .chat-input:focus {
+      border-color: #7b1fa2;
+      box-shadow: 0 0 0 4px rgba(123,31,162,0.1);
+    }
+
+    .theme-lavender-purple .send-button {
+      padding: 17px 34px;
+      background: linear-gradient(135deg, #7b1fa2 0%, #4a148c 100%);
+      color: white;
+      border: none;
+      border-radius: 28px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 4px 15px rgba(123,31,162,0.35);
+    }
+
+    .theme-lavender-purple .send-button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 7px 25px rgba(123,31,162,0.45);
+    }
+
+    /* Responsive design */
+    @media (max-width: 768px) {
+      .header h1 {
+        font-size: 1.8rem;
+      }
+
+      .theme-selector {
+        grid-template-columns: 1fr;
+      }
+
+      .preview-container {
+        padding: 15px;
+      }
+
+      .chat-interface {
+        border-radius: 12px !important;
+      }
+
+      .message-bubble {
+        max-width: 85% !important;
+      }
+
+      .chat-input-area {
+        flex-direction: column;
+      }
+
+      .send-button {
+        width: 100%;
+      }
+    }
+
+    /* Accessibility */
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border-width: 0;
+    }
+
+    /* Loading animation */
+    .typing-indicator {
+      display: flex;
+      gap: 5px;
+      padding: 10px 0;
+    }
+
+    .typing-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #999;
+      animation: typing 1.4s infinite;
+    }
+
+    .typing-dot:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .typing-dot:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes typing {
+      0%, 60%, 100% {
+        transform: translateY(0);
+        opacity: 0.7;
+      }
+      30% {
+        transform: translateY(-10px);
+        opacity: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>RAG-Base AIコーチングbot</h1>
+      <p>デザインテーマセレクター - あなたのプロジェクトに最適なデザインを選びましょう</p>
+    </div>
+
+    <div class="theme-selector">
+      <!-- Theme 1: Calm Ocean -->
+      <div class="theme-card active" data-theme="calm-ocean">
+        <div class="theme-name" style="color: #0277bd;">🌊 Calm Ocean</div>
+        <div class="theme-description">
+          落ち着いた海のような安心感を提供するテーマ。メンタルヘルスケアに最適な、心を落ち着かせるブルーカラーを基調とし、信頼感と専門性を両立します。
+        </div>
+        <div class="color-palette">
+          <div class="color-swatch" style="background: #0277bd;" data-label="Primary"></div>
+          <div class="color-swatch" style="background: #01579b;" data-label="Primary Dark"></div>
+          <div class="color-swatch" style="background: #b3e5fc;" data-label="Accent"></div>
+          <div class="color-swatch" style="background: #e0f2f7;" data-label="Background"></div>
+          <div class="color-swatch" style="background: #263238;" data-label="Text"></div>
+        </div>
+        <div class="typography-info">
+          <strong>Typography:</strong> System Font / 16px Base / 1.5 Line Height
+        </div>
+      </div>
+
+      <!-- Theme 2: Warm Sunset -->
+      <div class="theme-card" data-theme="warm-sunset">
+        <div class="theme-name" style="color: #ff6f00;">🌅 Warm Sunset</div>
+        <div class="theme-description">
+          温かみのあるオレンジ系カラーで、ポジティブなエネルギーと前向きな気持ちを引き出します。親しみやすく、やる気を高めるデザインです。
+        </div>
+        <div class="color-palette">
+          <div class="color-swatch" style="background: #ff6f00;" data-label="Primary"></div>
+          <div class="color-swatch" style="background: #e65100;" data-label="Primary Dark"></div>
+          <div class="color-swatch" style="background: #ffe0b2;" data-label="Accent"></div>
+          <div class="color-swatch" style="background: #fff8e1;" data-label="Background"></div>
+          <div class="color-swatch" style="background: #3e2723;" data-label="Text"></div>
+        </div>
+        <div class="typography-info">
+          <strong>Typography:</strong> System Font / 16px Base / 1.6 Line Height
+        </div>
+      </div>
+
+      <!-- Theme 3: Forest Green -->
+      <div class="theme-card" data-theme="forest-green">
+        <div class="theme-name" style="color: #2e7d32;">🌲 Forest Green</div>
+        <div class="theme-description">
+          自然を感じさせるグリーンカラーで、成長と癒しを象徴します。バランスの取れた心身の健康をサポートする、落ち着いた雰囲気のテーマです。
+        </div>
+        <div class="color-palette">
+          <div class="color-swatch" style="background: #2e7d32;" data-label="Primary"></div>
+          <div class="color-swatch" style="background: #1b5e20;" data-label="Primary Dark"></div>
+          <div class="color-swatch" style="background: #c8e6c9;" data-label="Accent"></div>
+          <div class="color-swatch" style="background: #f1f8f4;" data-label="Background"></div>
+          <div class="color-swatch" style="background: #1b5e20;" data-label="Text"></div>
+        </div>
+        <div class="typography-info">
+          <strong>Typography:</strong> System Font / 16px Base / 1.6 Line Height
+        </div>
+      </div>
+
+      <!-- Theme 4: Lavender Purple -->
+      <div class="theme-card" data-theme="lavender-purple">
+        <div class="theme-name" style="color: #7b1fa2;">💜 Lavender Purple</div>
+        <div class="theme-description">
+          ラベンダーパープルの上品で優しい雰囲気が、深い共感と理解を表現します。創造性とスピリチュアルな癒しを重視するテーマです。
+        </div>
+        <div class="color-palette">
+          <div class="color-swatch" style="background: #7b1fa2;" data-label="Primary"></div>
+          <div class="color-swatch" style="background: #4a148c;" data-label="Primary Dark"></div>
+          <div class="color-swatch" style="background: #e1bee7;" data-label="Accent"></div>
+          <div class="color-swatch" style="background: #f3e5f5;" data-label="Background"></div>
+          <div class="color-swatch" style="background: #4a148c;" data-label="Text"></div>
+        </div>
+        <div class="typography-info">
+          <strong>Typography:</strong> System Font / 16px Base / 1.7 Line Height
+        </div>
+      </div>
+    </div>
+
+    <div class="preview-container">
+      <div class="preview-header">
+        <h2>プレビュー: AIチャットインターフェース</h2>
+        <p style="color: #666; margin-top: 10px;">各テーマのクリックで切り替え可能です</p>
+      </div>
+
+      <!-- Theme 1 Preview -->
+      <div class="preview-content active theme-calm-ocean">
+        <div class="chat-interface">
+          <div class="chat-header">
+            <div class="chat-avatar">🤖</div>
+            <div>
+              <h3 style="font-size: 1.3rem; font-weight: 700;">AIコーチング</h3>
+              <p style="opacity: 0.9; font-size: 0.9rem;">あなたの成長をサポートします</p>
+            </div>
+          </div>
+
+          <div class="chat-messages">
+            <div class="message assistant">
+              <div class="message-bubble">
+                こんにちは。今日はどのようなことについてお話ししましょうか?
+              </div>
+            </div>
+
+            <div class="message user">
+              <div class="message-bubble">
+                最近、仕事でのストレスが増えていて、どう対処すればいいか悩んでいます。
+              </div>
+            </div>
+
+            <div class="message assistant">
+              <div class="message-bubble">
+                ストレスを感じていらっしゃるんですね。まず、そのことに気づき、言語化できていることが素晴らしいステップです。<br><br>
+                あなたのCOM:PASSデータを確認したところ、最近のタスク完了率が通常より10%低下していますね。これもストレスの影響かもしれません。<br><br>
+                コーチング理論によれば、ストレス管理には「認知の再構築」と「具体的な対処行動」の両方が重要です。まず、具体的にどのような場面でストレスを感じますか?
+              </div>
+            </div>
+          </div>
+
+          <div class="chat-input-area">
+            <input type="text" class="chat-input" placeholder="メッセージを入力..." aria-label="メッセージ入力">
+            <button class="send-button">送信</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Theme 2 Preview -->
+      <div class="preview-content theme-warm-sunset">
+        <div class="chat-interface">
+          <div class="chat-header">
+            <div class="chat-avatar">🤖</div>
+            <div>
+              <h3 style="font-size: 1.3rem; font-weight: 700;">AIコーチング</h3>
+              <p style="opacity: 0.95; font-size: 0.9rem;">あなたの可能性を引き出します</p>
+            </div>
+          </div>
+
+          <div class="chat-messages">
+            <div class="message assistant">
+              <div class="message-bubble">
+                こんにちは! 今日も一緒に成長していきましょう。どんなことでもお話しください。
+              </div>
+            </div>
+
+            <div class="message user">
+              <div class="message-bubble">
+                新しいプロジェクトのリーダーに任命されたのですが、自信が持てません。
+              </div>
+            </div>
+
+            <div class="message assistant">
+              <div class="message-bubble">
+                新しいチャレンジに挑戦されるんですね。素晴らしい成長の機会です!<br><br>
+                あなたのこれまでの成果を見てみましょう。過去3ヶ月で完了したタスクの質を分析すると、チーム協働に関するタスクで特に高い評価を得ていますね。<br><br>
+                リーダーシップ理論では、「自己効力感」を高めることが重要です。まず、この役割で達成したい具体的な目標を一緒に考えてみませんか?
+              </div>
+            </div>
+          </div>
+
+          <div class="chat-input-area">
+            <input type="text" class="chat-input" placeholder="メッセージを入力..." aria-label="メッセージ入力">
+            <button class="send-button">送信</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Theme 3 Preview -->
+      <div class="preview-content theme-forest-green">
+        <div class="chat-interface">
+          <div class="chat-header">
+            <div class="chat-avatar">🤖</div>
+            <div>
+              <h3 style="font-size: 1.3rem; font-weight: 700;">AIコーチング</h3>
+              <p style="opacity: 0.95; font-size: 0.9rem;">バランスの取れた成長をサポート</p>
+            </div>
+          </div>
+
+          <div class="chat-messages">
+            <div class="message assistant">
+              <div class="message-bubble">
+                こんにちは。ゆっくりと、あなたのペースでお話ししましょう。
+              </div>
+            </div>
+
+            <div class="message user">
+              <div class="message-bubble">
+                仕事とプライベートのバランスが取れず、疲れています。
+              </div>
+            </div>
+
+            <div class="message assistant">
+              <div class="message-bubble">
+                ワークライフバランスについて悩んでいらっしゃるんですね。<br><br>
+                あなたのログデータを見ると、先週の睡眠時間が平均5.5時間と、理想的な7時間を下回っています。また、「休息」に関する目標の進捗が30%にとどまっていますね。
+                <div class="citation">
+                  📚 出典: コーチング理論体系 > ウェルビーイング > 「持続可能な成長には適切な休息が不可欠」
+                </div>
+                まず、小さな変化から始めてみましょう。毎日15分の「自分時間」を確保することから始めてみませんか?
+              </div>
+            </div>
+          </div>
+
+          <div class="chat-input-area">
+            <input type="text" class="chat-input" placeholder="メッセージを入力..." aria-label="メッセージ入力">
+            <button class="send-button">送信</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Theme 4 Preview -->
+      <div class="preview-content theme-lavender-purple">
+        <div class="chat-interface">
+          <div class="chat-header">
+            <div class="chat-avatar">🤖</div>
+            <div>
+              <h3 style="font-size: 1.3rem; font-weight: 700;">AIコーチング</h3>
+              <p style="opacity: 0.95; font-size: 0.9rem;">深い理解と共感で寄り添います</p>
+            </div>
+          </div>
+
+          <div class="chat-messages">
+            <div class="message assistant">
+              <div class="message-bubble">
+                ようこそ。あなたの心の声に耳を傾けさせてください。
+              </div>
+            </div>
+
+            <div class="message user">
+              <div class="message-bubble">
+                自分が本当にやりたいことが分からなくなってきました。
+              </div>
+            </div>
+
+            <div class="message assistant">
+              <div class="message-bubble">
+                人生の方向性について考えていらっしゃるんですね。とても大切な問いかけです。<br><br>
+                あなたの過去の振り返り記録を見ると、「創造的な活動」に関わったときに最も高い充実感を感じていることが分かります。特に、3週間前の記録で「デザイン作業で時間を忘れた」と書かれていましたね。
+                <div class="citation">
+                  📚 出典: あなたの振り返り記録 > 2025年10月10日 > 「デザイン作業中、完全に没頭できた。これが本当の自分かも」
+                </div>
+                この「フロー状態」を感じた経験について、もう少し詳しく聞かせていただけますか?
+              </div>
+            </div>
+          </div>
+
+          <div class="chat-input-area">
+            <input type="text" class="chat-input" placeholder="メッセージを入力..." aria-label="メッセージ入力">
+            <button class="send-button">送信</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Theme switching logic
+    const themeCards = document.querySelectorAll('.theme-card');
+    const previewContents = document.querySelectorAll('.preview-content');
+
+    themeCards.forEach(card => {
+      card.addEventListener('click', () => {
+        // Remove active class from all cards
+        themeCards.forEach(c => c.classList.remove('active'));
+
+        // Add active class to clicked card
+        card.classList.add('active');
+
+        // Get theme name
+        const themeName = card.dataset.theme;
+
+        // Hide all previews
+        previewContents.forEach(preview => {
+          preview.classList.remove('active');
+        });
+
+        // Show selected preview
+        const selectedPreview = document.querySelector(`.preview-content.theme-${themeName}`);
+        if (selectedPreview) {
+          selectedPreview.classList.add('active');
+        }
+
+        // Announce change for screen readers
+        const announcement = document.createElement('div');
+        announcement.className = 'visually-hidden';
+        announcement.setAttribute('role', 'status');
+        announcement.setAttribute('aria-live', 'polite');
+        announcement.textContent = `${card.querySelector('.theme-name').textContent} テーマが選択されました`;
+        document.body.appendChild(announcement);
+        setTimeout(() => announcement.remove(), 1000);
+      });
+
+      // Keyboard accessibility
+      card.setAttribute('role', 'button');
+      card.setAttribute('tabindex', '0');
+      card.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          card.click();
+        }
+      });
+    });
+
+    // Simulate typing animation (optional)
+    function addTypingIndicator() {
+      const activePreview = document.querySelector('.preview-content.active .chat-messages');
+      const typingDiv = document.createElement('div');
+      typingDiv.className = 'message assistant';
+      typingDiv.innerHTML = `
+        <div class="typing-indicator">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        </div>
+      `;
+      return typingDiv;
+    }
+
+    // Add focus styles for accessibility
+    document.querySelectorAll('.chat-input, .send-button').forEach(element => {
+      element.addEventListener('focus', () => {
+        element.style.outline = '3px solid rgba(102, 126, 234, 0.5)';
+      });
+      element.addEventListener('blur', () => {
+        element.style.outline = 'none';
+      });
+    });
+  </script>
+</body>
+</html>

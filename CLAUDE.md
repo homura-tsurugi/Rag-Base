@@ -305,6 +305,37 @@ Whisper:
   - 対応形式: mp3, mp4, wav, m4a等
 ```
 
+### MUI（Material-UI）v7
+```yaml
+バージョン: v7.3.4（2025年11月時点）
+重要な破壊的変更:
+  - TypographyOptions型の削除
+  - 新しいモジュール構造（Node.js exports field使用）
+  - 深いインポートパス（1階層以上）が不可に
+  - Grid: item prop削除、xs/md等のpropがsize propに統合
+
+対応方法:
+  # TypographyOptions型
+  # 旧方式（v5/v6）- 動作しない
+  import { TypographyOptions } from '@mui/material/styles/createTypography';
+  # 新方式（v7）- 推奨
+  import type { ThemeOptions } from '@mui/material/styles';
+  const typography: ThemeOptions['typography'] = { ... };
+
+  # Grid API変更
+  # 旧: <Grid item xs={6}>
+  # 新: <Grid size={{ xs: 6 }}>
+
+  # 型のみインポート（verbatimModuleSyntax対応）
+  import type { Components, Theme } from '@mui/material/styles';
+
+参考リソース:
+  - Migration Guide: https://next.mui.com/material-ui/migration/upgrade-to-v7/
+  - Grid v2 Migration: https://mui.com/material-ui/migration/upgrade-to-grid-v2/
+  - TypeScript strict mode対応必須
+  - verbatimModuleSyntax: true推奨
+```
+
 ## ⚠️ プロジェクト固有の注意事項
 
 ### MVP段階の制約
@@ -354,6 +385,10 @@ Whisper:
 ## 📝 作業ログ（最新10件）
 
 ```yaml
+- 2025-11-02: ChatPageビルドエラー解消（MUI v7 Grid API対応: item prop削除、size prop使用）
+- 2025-11-02: MUIテーマ実装完了（Mental-Base準拠、MUI v7対応）
+- 2025-11-02: MUI v7破壊的変更対応（TypographyOptions型廃止対応）
+- 2025-11-02: CLAUDE.md更新（MUI v7情報追加）
 - 2025-11-02: MVP要件定義書作成完了 (docs/requirements.md)
 - 2025-11-02: SCOPE_PROGRESS.md更新（統合ページ管理表追加）
 - 2025-11-02: CLAUDE.md作成完了
