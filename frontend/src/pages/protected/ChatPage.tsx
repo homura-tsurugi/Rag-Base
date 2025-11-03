@@ -22,7 +22,6 @@ import {
   DialogActions,
   List,
   ListItem,
-  ListItemIcon,
   ListItemText,
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';

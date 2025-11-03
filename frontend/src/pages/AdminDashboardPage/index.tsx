@@ -19,6 +19,19 @@ import {
   Avatar,
   useTheme,
   alpha,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  TableContainer,
+  Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Divider,
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
@@ -26,7 +39,6 @@ import {
   History as HistoryIcon,
   People as PeopleIcon,
   Tune as TuneIcon,
-  Chat as ChatIcon,
   Logout as LogoutIcon,
   Notifications as NotificationsIcon,
   Settings as SettingsIcon,
@@ -36,6 +48,9 @@ import {
   ChatBubble as ChatBubbleIcon,
   Api as ApiIcon,
   Hub as HubIcon,
+  CheckCircle as CheckCircleIcon,
+  Warning as WarningIcon,
+  Close as CloseIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 
@@ -219,6 +234,8 @@ export const AdminDashboardPage = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState('dashboard');
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
 
   const handleLogout = () => {
     // ログアウト処理
@@ -226,6 +243,52 @@ export const AdminDashboardPage = () => {
     localStorage.removeItem('user');
     navigate('/login');
   };
+
+  // モックデータ: ユーザー一覧
+  const mockUsers = [
+    { id: 'user1', name: 'クライアント1', email: 'client1@rag-base.local', activeConversations: 5, totalMessages: 47 },
+    { id: 'user2', name: 'クライアント2', email: 'client2@rag-base.local', activeConversations: 3, totalMessages: 28 },
+    { id: 'user3', name: 'クライアント3', email: 'client3@rag-base.local', activeConversations: 8, totalMessages: 92 },
+  ];
+
+  // モックデータ: 会話履歴（選択されたユーザーの）
+  const mockConversations = selectedUserId ? [
+    {
+      id: 'session1',
+      title: '目標設定についての相談',
+      date: '2025-11-01',
+      messageCount: 12,
+      hasSummary: true,
+      summary: {
+        topics: ['キャリア目標', '3ヶ月計画', 'スキルアップ'],
+        problems: ['時間管理の課題', 'モチベーション維持'],
+        advice: ['毎日30分の学習時間を確保', '週次で進捗確認'],
+        insights: ['短期目標の細分化が重要', '小さな成功体験の積み重ね'],
+        next_steps: ['学習計画の作成', '1週間後のフォローアップ'],
+      },
+    },
+    {
+      id: 'session2',
+      title: '進捗確認とフィードバック',
+      date: '2025-11-02',
+      messageCount: 8,
+      hasSummary: true,
+      summary: {
+        topics: ['進捗確認', '課題の振り返り'],
+        problems: ['計画通りに進まない', '予想外の障害'],
+        advice: ['柔軟に計画を調整', '小さく始める'],
+        insights: ['完璧を目指さない', '継続が力になる'],
+        next_steps: ['計画の見直し', '明日から実行'],
+      },
+    },
+    {
+      id: 'session3',
+      title: '学習方法の相談',
+      date: '2025-11-03',
+      messageCount: 15,
+      hasSummary: false,
+    },
+  ] : [];
 
   const menuItems = [
     { id: 'dashboard', label: 'AIチャットダッシュボード', icon: <DashboardIcon sx={{ fontSize: 20 }} /> },
@@ -588,10 +651,246 @@ export const AdminDashboardPage = () => {
 
         {/* Users Management Page */}
         {currentPage === 'users' && (
-          <Box>
-            <Typography variant="body1" color="text.secondary">
-              ユーザー管理機能は現在開発中です。
-            </Typography>
+          <Box sx={{ display: 'flex', gap: 3, height: 'calc(100vh - 180px)' }}>
+            {/* ユーザー一覧 */}
+            <Card sx={{ width: '320px', flexShrink: 0, overflowY: 'auto' }}>
+              <CardContent>
+                <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
+                  クライアント一覧
+                </Typography>
+                <List disablePadding>
+                  {mockUsers.map((user) => (
+                    <ListItem
+                      key={user.id}
+                      disablePadding
+                      sx={{ mb: 1 }}
+                    >
+                      <ListItemButton
+                        selected={selectedUserId === user.id}
+                        onClick={() => {
+                          setSelectedUserId(user.id);
+                          setSelectedSessionId(null);
+                        }}
+                        sx={{
+                          borderRadius: 1,
+                          '&.Mui-selected': {
+                            bgcolor: alpha(theme.palette.primary.main, 0.1),
+                            '&:hover': {
+                              bgcolor: alpha(theme.palette.primary.main, 0.15),
+                            },
+                          },
+                        }}
+                      >
+                        <Avatar sx={{ mr: 2, bgcolor: theme.palette.primary.main }}>
+                          {user.name.charAt(user.name.length - 1)}
+                        </Avatar>
+                        <ListItemText
+                          primary={user.name}
+                          secondary={
+                            <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                              <Chip
+                                label={`${user.activeConversations}会話`}
+                                size="small"
+                                sx={{ height: 20, fontSize: 11 }}
+                              />
+                              <Chip
+                                label={`${user.totalMessages}メッセージ`}
+                                size="small"
+                                sx={{ height: 20, fontSize: 11 }}
+                              />
+                            </Box>
+                          }
+                        />
+                      </ListItemButton>
+                    </ListItem>
+                  ))}
+                </List>
+              </CardContent>
+            </Card>
+
+            {/* 会話履歴 */}
+            {selectedUserId ? (
+              <Card sx={{ flex: 1, overflowY: 'auto' }}>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                    <Typography variant="h6" fontWeight={600}>
+                      会話履歴
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {mockConversations.length}件
+                    </Typography>
+                  </Box>
+                  <TableContainer>
+                    <Table>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>会話タイトル</TableCell>
+                          <TableCell>日付</TableCell>
+                          <TableCell align="center">メッセージ数</TableCell>
+                          <TableCell align="center">要約</TableCell>
+                          <TableCell align="center">アクション</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {mockConversations.map((conversation) => (
+                          <TableRow key={conversation.id} hover>
+                            <TableCell>{conversation.title}</TableCell>
+                            <TableCell>{conversation.date}</TableCell>
+                            <TableCell align="center">{conversation.messageCount}</TableCell>
+                            <TableCell align="center">
+                              {conversation.hasSummary ? (
+                                <CheckCircleIcon sx={{ color: 'success.main', fontSize: 20 }} />
+                              ) : (
+                                <WarningIcon sx={{ color: 'warning.main', fontSize: 20 }} />
+                              )}
+                            </TableCell>
+                            <TableCell align="center">
+                              {conversation.hasSummary && (
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  onClick={() => setSelectedSessionId(conversation.id)}
+                                >
+                                  要約を見る
+                                </Button>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </CardContent>
+              </Card>
+            ) : (
+              <Box
+                sx={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  bgcolor: alpha(theme.palette.common.black, 0.02),
+                  borderRadius: 2,
+                }}
+              >
+                <Typography variant="body1" color="text.secondary">
+                  クライアントを選択してください
+                </Typography>
+              </Box>
+            )}
+
+            {/* 要約モーダル */}
+            <Dialog
+              open={!!selectedSessionId}
+              onClose={() => setSelectedSessionId(null)}
+              maxWidth="md"
+              fullWidth
+            >
+              {selectedSessionId && (() => {
+                const conversation = mockConversations.find(c => c.id === selectedSessionId);
+                if (!conversation || !conversation.summary) return null;
+
+                return (
+                  <>
+                    <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <Box>
+                        <Typography variant="h6" fontWeight={600}>
+                          会話要約
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {conversation.title} - {conversation.date}
+                        </Typography>
+                      </Box>
+                      <IconButton onClick={() => setSelectedSessionId(null)}>
+                        <CloseIcon />
+                      </IconButton>
+                    </DialogTitle>
+                    <DialogContent dividers>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                        {/* 話題 */}
+                        <Box>
+                          <Typography variant="subtitle2" fontWeight={600} color="text.secondary" sx={{ mb: 1 }}>
+                            💬 話題
+                          </Typography>
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                            {conversation.summary.topics.map((topic, idx) => (
+                              <Chip key={idx} label={topic} size="small" />
+                            ))}
+                          </Box>
+                        </Box>
+
+                        <Divider />
+
+                        {/* 問題 */}
+                        <Box>
+                          <Typography variant="subtitle2" fontWeight={600} color="text.secondary" sx={{ mb: 1 }}>
+                            ⚠️ 問題・課題
+                          </Typography>
+                          <List dense>
+                            {conversation.summary.problems.map((problem, idx) => (
+                              <ListItem key={idx} disablePadding>
+                                <ListItemText primary={`• ${problem}`} />
+                              </ListItem>
+                            ))}
+                          </List>
+                        </Box>
+
+                        <Divider />
+
+                        {/* アドバイス */}
+                        <Box>
+                          <Typography variant="subtitle2" fontWeight={600} color="text.secondary" sx={{ mb: 1 }}>
+                            💡 提供されたアドバイス
+                          </Typography>
+                          <List dense>
+                            {conversation.summary.advice.map((adv, idx) => (
+                              <ListItem key={idx} disablePadding>
+                                <ListItemText primary={`• ${adv}`} />
+                              </ListItem>
+                            ))}
+                          </List>
+                        </Box>
+
+                        <Divider />
+
+                        {/* 気づき */}
+                        <Box>
+                          <Typography variant="subtitle2" fontWeight={600} color="text.secondary" sx={{ mb: 1 }}>
+                            ✨ 気づき
+                          </Typography>
+                          <List dense>
+                            {conversation.summary.insights.map((insight, idx) => (
+                              <ListItem key={idx} disablePadding>
+                                <ListItemText primary={`• ${insight}`} />
+                              </ListItem>
+                            ))}
+                          </List>
+                        </Box>
+
+                        <Divider />
+
+                        {/* 次のステップ */}
+                        <Box>
+                          <Typography variant="subtitle2" fontWeight={600} color="text.secondary" sx={{ mb: 1 }}>
+                            📌 次のステップ
+                          </Typography>
+                          <List dense>
+                            {conversation.summary.next_steps.map((step, idx) => (
+                              <ListItem key={idx} disablePadding>
+                                <ListItemText primary={`• ${step}`} />
+                              </ListItem>
+                            ))}
+                          </List>
+                        </Box>
+                      </Box>
+                    </DialogContent>
+                    <DialogActions>
+                      <Button onClick={() => setSelectedSessionId(null)}>閉じる</Button>
+                    </DialogActions>
+                  </>
+                );
+              })()}
+            </Dialog>
           </Box>
         )}
 
