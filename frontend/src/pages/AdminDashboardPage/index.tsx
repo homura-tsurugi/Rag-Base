@@ -218,22 +218,78 @@ const NavCard = ({
 export const AdminDashboardPage = () => {
   const theme = useTheme();
   const navigate = useNavigate();
-  const [currentPage] = useState('dashboard');
+  const [currentPage, setCurrentPage] = useState('dashboard');
+
+  const handleLogout = () => {
+    // ログアウト処理
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user');
+    navigate('/login');
+  };
 
   const menuItems = [
-    { id: 'dashboard', label: 'ダッシュボード', icon: <DashboardIcon sx={{ fontSize: 20 }} />, href: '/admin' },
-    { id: 'datasets', label: 'ナレッジベース', icon: <FolderIcon sx={{ fontSize: 20 }} />, href: '/admin/datasets' },
-    { id: 'logs', label: '会話履歴', icon: <HistoryIcon sx={{ fontSize: 20 }} />, href: '/admin/logs' },
-    { id: 'users', label: 'ユーザー管理', icon: <PeopleIcon sx={{ fontSize: 20 }} />, href: '/admin/users' },
+    { id: 'dashboard', label: 'AIチャットダッシュボード', icon: <DashboardIcon sx={{ fontSize: 20 }} /> },
+    { id: 'rag', label: 'RAG管理', icon: <FolderIcon sx={{ fontSize: 20 }} /> },
+    { id: 'users', label: 'ユーザー管理', icon: <PeopleIcon sx={{ fontSize: 20 }} /> },
   ];
 
-  const settingsItems = [
-    { id: 'prompts', label: 'プロンプト編集', icon: <TuneIcon sx={{ fontSize: 20 }} />, href: '/admin/app/config' },
+  // RAG管理のカード（Dify管理ページへのショートカット）
+  const ragManagementCards = [
+    {
+      id: 'knowledge',
+      title: 'ナレッジベース',
+      icon: <FolderIcon sx={{ fontSize: 28 }} />,
+      iconBgColor: alpha(theme.palette.primary.main, 0.1),
+      iconColor: theme.palette.primary.main,
+      description: 'システムRAG（専門知識）とユーザーRAG（個別データ）のアップロード・更新・削除を管理します。',
+      badge: 'Dify',
+      href: 'https://cloud.dify.ai/datasets',
+    },
+    {
+      id: 'prompts',
+      title: 'プロンプト編集',
+      icon: <TuneIcon sx={{ fontSize: 28 }} />,
+      iconBgColor: alpha(theme.palette.info.main, 0.1),
+      iconColor: theme.palette.info.main,
+      description: 'AIの応答スタイル、ペルソナ、指示を調整し、A/Bテストやプレビューを実行できます。',
+      badge: 'Dify',
+      href: 'https://cloud.dify.ai/app/9cea88a7-7aee-44ae-9635-5441faed3df2/configuration',
+    },
+    {
+      id: 'api',
+      title: 'API管理',
+      icon: <ApiIcon sx={{ fontSize: 28 }} />,
+      iconBgColor: alpha(theme.palette.success.main, 0.1),
+      iconColor: theme.palette.success.main,
+      description: 'API設定、アクセスキーの発行・管理、レート制限の設定を行います。',
+      badge: 'Dify',
+      href: 'https://cloud.dify.ai/app/9cea88a7-7aee-44ae-9635-5441faed3df2/develop',
+    },
+    {
+      id: 'logs',
+      title: 'ログ',
+      icon: <HistoryIcon sx={{ fontSize: 28 }} />,
+      iconBgColor: alpha(theme.palette.warning.main, 0.1),
+      iconColor: theme.palette.warning.main,
+      description: '全クライアントの会話ログ、エラーログ、API呼び出し履歴を確認できます。',
+      badge: 'Dify',
+      href: 'https://cloud.dify.ai/app/9cea88a7-7aee-44ae-9635-5441faed3df2/logs',
+    },
+    {
+      id: 'analytics',
+      title: '統計',
+      icon: <DashboardIcon sx={{ fontSize: 28 }} />,
+      iconBgColor: alpha(theme.palette.secondary.main, 0.1),
+      iconColor: theme.palette.secondary.main,
+      description: '利用統計、トークン消費量、ユーザーアクティビティの分析データを表示します。',
+      badge: 'Dify',
+      href: 'https://cloud.dify.ai/app/9cea88a7-7aee-44ae-9635-5441faed3df2/overview',
+    },
   ];
 
   const otherItems = [
-    { id: 'chat', label: 'チャット画面', icon: <ChatIcon sx={{ fontSize: 20 }} />, href: '/chat' },
-    { id: 'logout', label: 'ログアウト', icon: <LogoutIcon sx={{ fontSize: 20 }} />, href: '/logout' },
+    { id: 'settings', label: '設定', icon: <SettingsIcon sx={{ fontSize: 20 }} /> },
+    { id: 'logout', label: 'ログアウト', icon: <LogoutIcon sx={{ fontSize: 20 }} /> },
   ];
 
   return (
@@ -309,7 +365,7 @@ export const AdminDashboardPage = () => {
                 <ListItem key={item.id} disablePadding sx={{ mb: 0.5 }}>
                   <ListItemButton
                     selected={currentPage === item.id}
-                    onClick={() => navigate(item.href)}
+                    onClick={() => setCurrentPage(item.id)}
                     sx={{
                       borderRadius: 1,
                       color: 'rgba(255, 255, 255, 0.8)',
@@ -327,58 +383,6 @@ export const AdminDashboardPage = () => {
                           bgcolor: '#2c5282',
                           color: 'white',
                         },
-                        '& .MuiListItemIcon-root': {
-                          color: 'white',
-                        },
-                        '& .MuiListItemText-primary': {
-                          color: 'white',
-                        },
-                      },
-                    }}
-                  >
-                    <ListItemIcon sx={{ color: 'inherit', minWidth: 36 }}>
-                      {item.icon}
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={item.label}
-                      primaryTypographyProps={{ fontSize: '14px', color: 'inherit' }}
-                    />
-                  </ListItemButton>
-                </ListItem>
-              ))}
-            </List>
-          </Box>
-
-          {/* 設定セクション */}
-          <Box sx={{ mb: 2 }}>
-            <Typography
-              variant="caption"
-              sx={{
-                textTransform: 'uppercase',
-                opacity: 0.6,
-                color: 'white',
-                px: 1,
-                mb: 0.5,
-                display: 'block',
-                fontSize: '12px',
-              }}
-            >
-              設定
-            </Typography>
-            <List disablePadding>
-              {settingsItems.map((item) => (
-                <ListItem key={item.id} disablePadding sx={{ mb: 0.5 }}>
-                  <ListItemButton
-                    onClick={() => navigate(item.href)}
-                    sx={{
-                      borderRadius: 1,
-                      color: 'rgba(255, 255, 255, 0.8)',
-                      fontSize: '14px',
-                      py: 1,
-                      px: 2,
-                      '&:hover': {
-                        bgcolor: 'rgba(255, 255, 255, 0.1)',
-                        color: 'white',
                         '& .MuiListItemIcon-root': {
                           color: 'white',
                         },
@@ -421,7 +425,13 @@ export const AdminDashboardPage = () => {
               {otherItems.map((item) => (
                 <ListItem key={item.id} disablePadding sx={{ mb: 0.5 }}>
                   <ListItemButton
-                    onClick={() => navigate(item.href)}
+                    onClick={() => {
+                      if (item.id === 'logout') {
+                        handleLogout();
+                      } else if (item.id === 'settings') {
+                        setCurrentPage('settings');
+                      }
+                    }}
                     sx={{
                       borderRadius: 1,
                       color: 'rgba(255, 255, 255, 0.8)',
@@ -469,7 +479,16 @@ export const AdminDashboardPage = () => {
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 6 }}>
           <Box>
             <Typography variant="h4" fontWeight={500} color="text.primary">
-              管理ダッシュボード
+              {currentPage === 'dashboard' && 'AIチャットダッシュボード'}
+              {currentPage === 'rag' && 'RAG管理'}
+              {currentPage === 'users' && 'ユーザー管理'}
+              {currentPage === 'settings' && '設定'}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              {currentPage === 'dashboard' && 'システム全体の統計と利用状況を確認できます'}
+              {currentPage === 'rag' && 'Dify管理機能へのショートカット'}
+              {currentPage === 'users' && 'ユーザー情報とRAGデータの管理'}
+              {currentPage === 'settings' && 'システム設定'}
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -494,111 +513,96 @@ export const AdminDashboardPage = () => {
           </Box>
         </Box>
 
-        {/* System Stats Grid */}
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-            gap: 3,
-            mb: 6,
-          }}
-        >
-          <StatCard
-            icon={<PeopleIcon sx={{ fontSize: 24 }} />}
-            iconColor={theme.palette.primary.main}
-            iconBgColor={alpha(theme.palette.primary.main, 0.1)}
-            label="総ユーザー数"
-            value="12"
-            unit="人"
-            footer="アクティブユーザー: 10人"
-          />
-          <StatCard
-            icon={<ForumIcon sx={{ fontSize: 24 }} />}
-            iconColor={theme.palette.success.main}
-            iconBgColor={alpha(theme.palette.success.main, 0.1)}
-            label="総会話数"
-            value="347"
-            unit="件"
-            footer="今週の新規会話: 28件"
-          />
-          <StatCard
-            icon={<ChatBubbleIcon sx={{ fontSize: 24 }} />}
-            iconColor={theme.palette.info.main}
-            iconBgColor={alpha(theme.palette.info.main, 0.1)}
-            label="総メッセージ数"
-            value="1,542"
-            unit="件"
-            footer="平均: 4.4メッセージ/会話"
-          />
-          <StatCard
-            icon={<ApiIcon sx={{ fontSize: 24 }} />}
-            iconColor={theme.palette.warning.main}
-            iconBgColor={alpha(theme.palette.warning.main, 0.1)}
-            label="Claude API使用量"
-            value="245K"
-            unit="トークン"
-            footer="今月の推定コスト: $8.50"
-          />
-        </Box>
+        {/* Dashboard Page */}
+        {currentPage === 'dashboard' && (
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+              gap: 3,
+            }}
+          >
+            <StatCard
+              icon={<PeopleIcon sx={{ fontSize: 24 }} />}
+              iconColor={theme.palette.primary.main}
+              iconBgColor={alpha(theme.palette.primary.main, 0.1)}
+              label="総ユーザー数"
+              value="12"
+              unit="人"
+              footer="アクティブユーザー: 10人"
+            />
+            <StatCard
+              icon={<ForumIcon sx={{ fontSize: 24 }} />}
+              iconColor={theme.palette.success.main}
+              iconBgColor={alpha(theme.palette.success.main, 0.1)}
+              label="総会話数"
+              value="347"
+              unit="件"
+              footer="今週の新規会話: 28件"
+            />
+            <StatCard
+              icon={<ChatBubbleIcon sx={{ fontSize: 24 }} />}
+              iconColor={theme.palette.info.main}
+              iconBgColor={alpha(theme.palette.info.main, 0.1)}
+              label="総メッセージ数"
+              value="1,542"
+              unit="件"
+              footer="平均: 4.4メッセージ/会話"
+            />
+            <StatCard
+              icon={<ApiIcon sx={{ fontSize: 24 }} />}
+              iconColor={theme.palette.warning.main}
+              iconBgColor={alpha(theme.palette.warning.main, 0.1)}
+              label="Claude API使用量"
+              value="245K"
+              unit="トークン"
+              footer="今月の推定コスト: $8.50"
+            />
+          </Box>
+        )}
 
-        {/* Navigation Cards Section */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h5" fontWeight={500} sx={{ mb: 0.5 }}>
-            管理機能
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            各管理機能にアクセスできます
-          </Typography>
-        </Box>
+        {/* RAG Management Page */}
+        {currentPage === 'rag' && (
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+              gap: 3,
+            }}
+          >
+            {ragManagementCards.map((card) => (
+              <NavCard
+                key={card.id}
+                icon={card.icon}
+                iconBgColor={card.iconBgColor}
+                iconColor={card.iconColor}
+                title={card.title}
+                description={card.description}
+                badge={card.badge}
+                href={card.href}
+                onClick={() => window.open(card.href, '_blank')}
+              />
+            ))}
+          </Box>
+        )}
 
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-            gap: 3,
-          }}
-        >
-          <NavCard
-            icon={<FolderIcon sx={{ fontSize: 28 }} />}
-            iconBgColor={alpha(theme.palette.primary.main, 0.1)}
-            iconColor={theme.palette.primary.main}
-            title="ナレッジベース管理"
-            description="システムRAG（専門知識）とユーザーRAG（個別データ）のアップロード・更新・削除を管理します。"
-            badge="D-005"
-            href="/admin/datasets"
-            onClick={() => navigate('/admin/datasets')}
-          />
-          <NavCard
-            icon={<HistoryIcon sx={{ fontSize: 28 }} />}
-            iconBgColor={alpha(theme.palette.warning.main, 0.1)}
-            iconColor={theme.palette.warning.main}
-            title="会話履歴管理"
-            description="全クライアントの会話履歴を確認し、危機フラグや引用元情報をチェックできます。"
-            badge="D-006"
-            href="/admin/logs"
-            onClick={() => navigate('/admin/logs')}
-          />
-          <NavCard
-            icon={<TuneIcon sx={{ fontSize: 28 }} />}
-            iconBgColor={alpha(theme.palette.info.main, 0.1)}
-            iconColor={theme.palette.info.main}
-            title="プロンプト編集"
-            description="AIの応答スタイル、ペルソナ、指示を調整し、A/Bテストやプレビューを実行できます。"
-            badge="D-007"
-            href="/admin/app/config"
-            onClick={() => navigate('/admin/app/config')}
-          />
-          <NavCard
-            icon={<PeopleIcon sx={{ fontSize: 28 }} />}
-            iconBgColor={alpha(theme.palette.success.main, 0.1)}
-            iconColor={theme.palette.success.main}
-            title="ユーザー管理"
-            description="クライアントの追加・削除・情報編集、アクセストークンの発行を管理できます。"
-            badge="D-009"
-            href="/admin/users"
-            onClick={() => navigate('/admin/users')}
-          />
-        </Box>
+        {/* Users Management Page */}
+        {currentPage === 'users' && (
+          <Box>
+            <Typography variant="body1" color="text.secondary">
+              ユーザー管理機能は現在開発中です。
+            </Typography>
+          </Box>
+        )}
+
+        {/* Settings Page */}
+        {currentPage === 'settings' && (
+          <Box>
+            <Typography variant="body1" color="text.secondary">
+              設定機能は現在開発中です。
+            </Typography>
+          </Box>
+        )}
       </Box>
     </Box>
   );
