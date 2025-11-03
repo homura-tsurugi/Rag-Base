@@ -14,4 +14,6 @@ export default defineConfig({
     port: 3000,
     host: true,
   },
+  // 環境変数をルートの.env.localから読み込む
+  envDir: path.resolve(__dirname, '..'),
 })
