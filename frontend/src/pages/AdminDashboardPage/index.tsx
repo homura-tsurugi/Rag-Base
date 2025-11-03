@@ -1,496 +1,605 @@
 // ============================================
-// AdminDashboardPage - コーチ向け管理ダッシュボード
+// AdminDashboardPage - メンター向け管理ダッシュボード
 // ============================================
-// 強化版：統計 + クライアント管理 + 会話履歴 + RAG管理
+// モックアップ (AdminDashboardPage.html) に準拠したデザイン
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Box,
-  Tabs,
-  Tab,
   Typography,
   Card,
   CardContent,
-  Grid,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Chip,
-  Button,
-  Alert,
-  CircularProgress,
   IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
+  Drawer,
   List,
   ListItem,
+  ListItemButton,
+  ListItemIcon,
   ListItemText,
+  Avatar,
+  useTheme,
+  alpha,
 } from '@mui/material';
 import {
-  People as PeopleIcon,
-  ChatBubble as ChatBubbleIcon,
-  Message as MessageIcon,
-  Cloud as CloudIcon,
+  Dashboard as DashboardIcon,
   Folder as FolderIcon,
-  Delete as DeleteIcon,
-  Upload as UploadIcon,
-  Visibility as VisibilityIcon,
-  Warning as WarningIcon,
+  History as HistoryIcon,
+  People as PeopleIcon,
+  Tune as TuneIcon,
+  Chat as ChatIcon,
+  Logout as LogoutIcon,
+  Notifications as NotificationsIcon,
+  Settings as SettingsIcon,
+  ArrowForward as ArrowForwardIcon,
+  Info as InfoIcon,
+  Forum as ForumIcon,
+  ChatBubble as ChatBubbleIcon,
+  Api as ApiIcon,
+  Hub as HubIcon,
 } from '@mui/icons-material';
-import { MainLayout } from '@/layouts/MainLayout';
-import {
-  mockGetSystemStats,
-  mockGetClients,
-  mockGetAllConversations,
-  mockGetKnowledgeBases,
-  mockGetDocuments,
-  mockUploadDocument,
-  mockDeleteDocument,
-} from '@/services/api/mockAdminService';
-import { getMessages } from '@/services/api/chatService';
-import type {
-  SystemStats,
-  ClientInfo,
-  Conversation,
-  KnowledgeBase,
-  Document,
-  Message,
-} from '@/types';
+import { useNavigate } from 'react-router-dom';
 
-// タブ定義
-type TabType = 'stats' | 'clients' | 'conversations' | 'rag';
+const DRAWER_WIDTH = 240;
 
-export const AdminDashboardPage = () => {
-  const [currentTab, setCurrentTab] = useState<TabType>('stats');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+interface StatCardProps {
+  icon: React.ReactElement;
+  iconColor: string;
+  iconBgColor: string;
+  label: string;
+  value: string;
+  unit: string;
+  footer: string;
+}
 
-  // データ状態
-  const [stats, setStats] = useState<SystemStats | null>(null);
-  const [clients, setClients] = useState<ClientInfo[]>([]);
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([]);
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [selectedKB, setSelectedKB] = useState<string | null>(null);
-
-  // 会話詳細ダイアログ
-  const [conversationDialog, setConversationDialog] = useState(false);
-  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
-  const [conversationMessages, setConversationMessages] = useState<Message[]>([]);
-
-  // データ読み込み
-  useEffect(() => {
-    loadData();
-  }, [currentTab]);
-
-  const loadData = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      switch (currentTab) {
-        case 'stats':
-          const statsData = await mockGetSystemStats();
-          setStats(statsData);
-          break;
-        case 'clients':
-          const clientsData = await mockGetClients();
-          setClients(clientsData);
-          break;
-        case 'conversations':
-          const conversationsData = await mockGetAllConversations();
-          setConversations(conversationsData);
-          break;
-        case 'rag':
-          const kbData = await mockGetKnowledgeBases();
-          setKnowledgeBases(kbData);
-          if (kbData.length > 0 && !selectedKB) {
-            const firstKB = kbData[0].dataset_id;
-            setSelectedKB(firstKB);
-            const docsData = await mockGetDocuments(firstKB);
-            setDocuments(docsData);
-          }
-          break;
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '読み込みエラー');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadDocuments = async (datasetId: string) => {
-    setSelectedKB(datasetId);
-    setLoading(true);
-    try {
-      const docsData = await mockGetDocuments(datasetId);
-      setDocuments(docsData);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'ドキュメント読み込みエラー');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleViewConversation = async (conversation: Conversation) => {
-    setSelectedConversation(conversation);
-    setConversationDialog(true);
-    setLoading(true);
-    try {
-      const messages = await getMessages(conversation.session_id);
-      setConversationMessages(messages);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'メッセージ読み込みエラー');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleUploadDocument = async (file: File) => {
-    if (!selectedKB) return;
-    setLoading(true);
-    try {
-      await mockUploadDocument({ dataset_id: selectedKB, file });
-      await loadDocuments(selectedKB);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'アップロードエラー');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDeleteDocument = async (documentId: string) => {
-    if (!selectedKB) return;
-    setLoading(true);
-    try {
-      await mockDeleteDocument(selectedKB, documentId);
-      await loadDocuments(selectedKB);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '削除エラー');
-    } finally {
-      setLoading(false);
-    }
-  };
+const StatCard = ({ icon, iconColor, iconBgColor, label, value, unit, footer }: StatCardProps) => {
+  const theme = useTheme();
 
   return (
-    <MainLayout>
-      <Box>
-        <Typography variant="h4" component="h1" gutterBottom fontWeight={700}>
-          管理ダッシュボード
-        </Typography>
-
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-
-        <Tabs value={currentTab} onChange={(_, value) => setCurrentTab(value)} sx={{ mb: 3 }}>
-          <Tab value="stats" label="統計" icon={<CloudIcon />} iconPosition="start" />
-          <Tab value="clients" label="クライアント" icon={<PeopleIcon />} iconPosition="start" />
-          <Tab
-            value="conversations"
-            label="会話履歴"
-            icon={<ChatBubbleIcon />}
-            iconPosition="start"
-          />
-          <Tab value="rag" label="RAG管理" icon={<FolderIcon />} iconPosition="start" />
-        </Tabs>
-
-        {loading && (
-          <Box display="flex" justifyContent="center" py={4}>
-            <CircularProgress />
+    <Card
+      sx={{
+        transition: 'all 0.15s ease-in-out',
+        '&:hover': {
+          transform: 'translateY(-2px)',
+          boxShadow: theme.shadows[8],
+        },
+      }}
+    >
+      <CardContent sx={{ p: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+          <Box
+            sx={{
+              width: 48,
+              height: 48,
+              borderRadius: 1.5,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              bgcolor: iconBgColor,
+              color: iconColor,
+            }}
+          >
+            {icon}
           </Box>
-        )}
-
-        {/* 統計タブ */}
-        {currentTab === 'stats' && stats && !loading && (
-          <Grid container spacing={3}>
-            <Grid size={{ xs: 12, md: 3 }}>
-              <Card>
-                <CardContent>
-                  <Box display="flex" alignItems="center" mb={1}>
-                    <PeopleIcon color="primary" sx={{ mr: 1 }} />
-                    <Typography variant="h6">ユーザー数</Typography>
-                  </Box>
-                  <Typography variant="h3">{stats.total_users}</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    今日のアクティブ: {stats.active_users_today}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-            <Grid size={{ xs: 12, md: 3 }}>
-              <Card>
-                <CardContent>
-                  <Box display="flex" alignItems="center" mb={1}>
-                    <ChatBubbleIcon color="success" sx={{ mr: 1 }} />
-                    <Typography variant="h6">会話数</Typography>
-                  </Box>
-                  <Typography variant="h3">{stats.total_conversations}</Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-            <Grid size={{ xs: 12, md: 3 }}>
-              <Card>
-                <CardContent>
-                  <Box display="flex" alignItems="center" mb={1}>
-                    <MessageIcon color="info" sx={{ mr: 1 }} />
-                    <Typography variant="h6">メッセージ数</Typography>
-                  </Box>
-                  <Typography variant="h3">{stats.total_messages}</Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-            <Grid size={{ xs: 12, md: 3 }}>
-              <Card>
-                <CardContent>
-                  <Box display="flex" alignItems="center" mb={1}>
-                    <FolderIcon color="warning" sx={{ mr: 1 }} />
-                    <Typography variant="h6">RAGドキュメント</Typography>
-                  </Box>
-                  <Typography variant="h3">
-                    {stats.knowledge_bases.system_rag_documents +
-                      stats.knowledge_bases.user_rag_documents}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    システム: {stats.knowledge_bases.system_rag_documents} / ユーザー:{' '}
-                    {stats.knowledge_bases.user_rag_documents}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
-        )}
-
-        {/* クライアントタブ */}
-        {currentTab === 'clients' && !loading && (
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>名前</TableCell>
-                  <TableCell>メール</TableCell>
-                  <TableCell>最終ログイン</TableCell>
-                  <TableCell align="right">会話数</TableCell>
-                  <TableCell align="right">メッセージ数</TableCell>
-                  <TableCell align="center">危機フラグ</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {clients.map((client) => (
-                  <TableRow key={client.user_id}>
-                    <TableCell>{client.name}</TableCell>
-                    <TableCell>{client.email}</TableCell>
-                    <TableCell>
-                      {client.last_login_at
-                        ? new Date(client.last_login_at).toLocaleString('ja-JP')
-                        : '-'}
-                    </TableCell>
-                    <TableCell align="right">{client.total_conversations}</TableCell>
-                    <TableCell align="right">{client.total_messages}</TableCell>
-                    <TableCell align="center">
-                      {client.crisis_flags > 0 ? (
-                        <Chip
-                          label={`${client.crisis_flags}件`}
-                          color="error"
-                          size="small"
-                          icon={<WarningIcon />}
-                        />
-                      ) : (
-                        <Typography variant="body2" color="text.secondary">
-                          なし
-                        </Typography>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
-
-        {/* 会話履歴タブ */}
-        {currentTab === 'conversations' && !loading && (
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>タイトル</TableCell>
-                  <TableCell>ユーザーID</TableCell>
-                  <TableCell>最終更新</TableCell>
-                  <TableCell align="right">メッセージ数</TableCell>
-                  <TableCell align="center">危機フラグ</TableCell>
-                  <TableCell align="center">アクション</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {conversations.map((conv) => (
-                  <TableRow key={conv.session_id}>
-                    <TableCell>{conv.title || '無題の会話'}</TableCell>
-                    <TableCell>{conv.user_id}</TableCell>
-                    <TableCell>
-                      {conv.updated_at
-                        ? new Date(conv.updated_at).toLocaleString('ja-JP')
-                        : '-'}
-                    </TableCell>
-                    <TableCell align="right">{conv.message_count || 0}</TableCell>
-                    <TableCell align="center">
-                      {conv.crisis_flag && <Chip label="危機" color="error" size="small" />}
-                    </TableCell>
-                    <TableCell align="center">
-                      <IconButton onClick={() => handleViewConversation(conv)} size="small">
-                        <VisibilityIcon />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
-
-        {/* RAG管理タブ */}
-        {currentTab === 'rag' && !loading && (
-          <Grid container spacing={3}>
-            <Grid size={{ xs: 12, md: 3 }}>
-              <Paper sx={{ p: 2 }}>
-                <Typography variant="h6" gutterBottom>
-                  ナレッジベース
-                </Typography>
-                <List>
-                  {knowledgeBases.map((kb) => (
-                    <ListItem
-                      key={kb.dataset_id}
-                      onClick={() => loadDocuments(kb.dataset_id)}
-                      sx={{
-                        cursor: 'pointer',
-                        bgcolor: selectedKB === kb.dataset_id ? 'action.selected' : 'transparent',
-                        '&:hover': {
-                          bgcolor: 'action.hover',
-                        },
-                      }}
-                    >
-                      <ListItemText
-                        primary={kb.name}
-                        secondary={`${kb.total_documents} ドキュメント`}
-                      />
-                    </ListItem>
-                  ))}
-                </List>
-              </Paper>
-            </Grid>
-            <Grid size={{ xs: 12, md: 9 }}>
-              <Paper sx={{ p: 2 }}>
-                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                  <Typography variant="h6">ドキュメント一覧</Typography>
-                  <Button
-                    variant="contained"
-                    startIcon={<UploadIcon />}
-                    component="label"
-                    disabled={!selectedKB}
-                  >
-                    アップロード
-                    <input
-                      type="file"
-                      hidden
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) handleUploadDocument(file);
-                      }}
-                    />
-                  </Button>
-                </Box>
-                <TableContainer>
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>ファイル名</TableCell>
-                        <TableCell>タイプ</TableCell>
-                        <TableCell>アップロード日時</TableCell>
-                        <TableCell align="right">チャンク数</TableCell>
-                        <TableCell align="center">ステータス</TableCell>
-                        <TableCell align="center">アクション</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {documents.map((doc) => (
-                        <TableRow key={doc.document_id}>
-                          <TableCell>{doc.filename}</TableCell>
-                          <TableCell>{doc.file_type.toUpperCase()}</TableCell>
-                          <TableCell>
-                            {new Date(doc.uploaded_at).toLocaleString('ja-JP')}
-                          </TableCell>
-                          <TableCell align="right">{doc.chunk_count}</TableCell>
-                          <TableCell align="center">
-                            <Chip
-                              label={doc.status}
-                              color={doc.status === 'completed' ? 'success' : 'default'}
-                              size="small"
-                            />
-                          </TableCell>
-                          <TableCell align="center">
-                            <IconButton
-                              onClick={() => handleDeleteDocument(doc.document_id)}
-                              size="small"
-                              color="error"
-                            >
-                              <DeleteIcon />
-                            </IconButton>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              </Paper>
-            </Grid>
-          </Grid>
-        )}
-
-        {/* 会話詳細ダイアログ */}
-        <Dialog
-          open={conversationDialog}
-          onClose={() => setConversationDialog(false)}
-          maxWidth="md"
-          fullWidth
-        >
-          <DialogTitle>{selectedConversation?.title || '会話詳細'}</DialogTitle>
-          <DialogContent>
-            {conversationMessages.map((msg) => (
-              <Box
-                key={msg.message_id}
-                sx={{
-                  mb: 2,
-                  p: 2,
-                  bgcolor: msg.role === 'user' ? 'grey.100' : 'primary.50',
-                  borderRadius: 1,
-                }}
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+              {label}
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'baseline' }}>
+              <Typography variant="h3" component="span" fontWeight={700}>
+                {value}
+              </Typography>
+              <Typography
+                variant="h6"
+                component="span"
+                color="text.secondary"
+                sx={{ ml: 1 }}
               >
-                <Typography variant="caption" color="text.secondary">
-                  {msg.role === 'user' ? 'ユーザー' : 'AI'}
-                </Typography>
-                <Typography variant="body1">{msg.content}</Typography>
-                {msg.citations && msg.citations.length > 0 && (
-                  <Box mt={1}>
-                    <Typography variant="caption" color="text.secondary">
-                      引用元: {msg.citations.map((c) => c.source).join(', ')}
-                    </Typography>
-                  </Box>
-                )}
-              </Box>
-            ))}
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setConversationDialog(false)}>閉じる</Button>
-          </DialogActions>
-        </Dialog>
+                {unit}
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <InfoIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+          <Typography variant="caption" color="text.secondary">
+            {footer}
+          </Typography>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+};
+
+interface NavCardProps {
+  icon: React.ReactElement;
+  iconBgColor: string;
+  iconColor: string;
+  title: string;
+  description: string;
+  badge: string;
+  href: string;
+  onClick?: () => void;
+}
+
+const NavCard = ({
+  icon,
+  iconBgColor,
+  iconColor,
+  title,
+  description,
+  badge,
+  onClick,
+}: NavCardProps) => {
+  const theme = useTheme();
+
+  return (
+    <Card
+      onClick={onClick}
+      sx={{
+        cursor: 'pointer',
+        transition: 'all 0.15s ease-in-out',
+        border: '2px solid transparent',
+        '&:hover': {
+          transform: 'translateY(-4px)',
+          boxShadow: theme.shadows[8],
+          borderColor: theme.palette.primary.light,
+          '& .nav-arrow': {
+            transform: 'translateX(4px)',
+          },
+        },
+      }}
+    >
+      <CardContent sx={{ p: 4, display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Box
+          sx={{
+            width: 56,
+            height: 56,
+            borderRadius: 2,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            bgcolor: iconBgColor,
+            color: iconColor,
+            mb: 1,
+          }}
+        >
+          {icon}
+        </Box>
+        <Box>
+          <Typography variant="h6" fontWeight={500} sx={{ mb: 0.5 }}>
+            {title}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5 }}>
+            {description}
+          </Typography>
+        </Box>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            pt: 2,
+            borderTop: 1,
+            borderColor: 'divider',
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Typography variant="body2" color="primary" fontWeight={500}>
+              管理画面へ
+            </Typography>
+            <ArrowForwardIcon
+              className="nav-arrow"
+              sx={{
+                fontSize: 18,
+                color: 'primary.main',
+                transition: 'transform 0.15s ease-in-out',
+              }}
+            />
+          </Box>
+          <Box
+            sx={{
+              bgcolor: alpha(theme.palette.text.primary, 0.06),
+              color: 'text.secondary',
+              px: 1,
+              py: 0.5,
+              borderRadius: 999,
+              fontSize: 12,
+              fontWeight: 500,
+            }}
+          >
+            {badge}
+          </Box>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+};
+
+export const AdminDashboardPage = () => {
+  const theme = useTheme();
+  const navigate = useNavigate();
+  const [currentPage] = useState('dashboard');
+
+  const menuItems = [
+    { id: 'dashboard', label: 'ダッシュボード', icon: <DashboardIcon sx={{ fontSize: 20 }} />, href: '/admin' },
+    { id: 'datasets', label: 'ナレッジベース', icon: <FolderIcon sx={{ fontSize: 20 }} />, href: '/admin/datasets' },
+    { id: 'logs', label: '会話履歴', icon: <HistoryIcon sx={{ fontSize: 20 }} />, href: '/admin/logs' },
+    { id: 'users', label: 'ユーザー管理', icon: <PeopleIcon sx={{ fontSize: 20 }} />, href: '/admin/users' },
+  ];
+
+  const settingsItems = [
+    { id: 'prompts', label: 'プロンプト編集', icon: <TuneIcon sx={{ fontSize: 20 }} />, href: '/admin/app/config' },
+  ];
+
+  const otherItems = [
+    { id: 'chat', label: 'チャット画面', icon: <ChatIcon sx={{ fontSize: 20 }} />, href: '/chat' },
+    { id: 'logout', label: 'ログアウト', icon: <LogoutIcon sx={{ fontSize: 20 }} />, href: '/logout' },
+  ];
+
+  return (
+    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+      {/* Side Navigation */}
+      <Drawer
+        variant="permanent"
+        sx={{
+          width: DRAWER_WIDTH,
+          flexShrink: 0,
+          '& .MuiDrawer-paper': {
+            width: DRAWER_WIDTH,
+            boxSizing: 'border-box',
+            bgcolor: theme.palette.primary.dark,
+            color: 'white',
+            borderRight: 'none',
+          },
+        }}
+      >
+        {/* Logo & User Info */}
+        <Box sx={{ p: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 2 }}>
+            <HubIcon sx={{ fontSize: 24, color: 'white' }} />
+            <Typography variant="h6" fontWeight={700} color="white">
+              COM:PASS
+            </Typography>
+          </Box>
+
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              p: 2,
+              borderRadius: 1,
+              bgcolor: 'rgba(255, 255, 255, 0.1)',
+            }}
+          >
+            <Avatar sx={{ width: 40, height: 40, bgcolor: '#4299e1' }}>
+              C
+            </Avatar>
+            <Box>
+              <Typography variant="body2" fontWeight={500} color="white">
+                コーチ
+              </Typography>
+              <Typography variant="caption" sx={{ opacity: 0.8, color: 'white' }}>
+                管理者
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+
+        {/* Navigation Menu */}
+        <Box sx={{ flex: 1, overflowY: 'auto', px: 2 }}>
+          {/* 管理セクション */}
+          <Box sx={{ mb: 2 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                textTransform: 'uppercase',
+                opacity: 0.6,
+                color: 'white',
+                px: 1,
+                mb: 0.5,
+                display: 'block',
+                fontSize: '12px',
+              }}
+            >
+              管理
+            </Typography>
+            <List disablePadding>
+              {menuItems.map((item) => (
+                <ListItem key={item.id} disablePadding sx={{ mb: 0.5 }}>
+                  <ListItemButton
+                    selected={currentPage === item.id}
+                    onClick={() => navigate(item.href)}
+                    sx={{
+                      borderRadius: 1,
+                      color: 'rgba(255, 255, 255, 0.8)',
+                      fontSize: '14px',
+                      py: 1,
+                      px: 2,
+                      '&:hover': {
+                        bgcolor: 'rgba(255, 255, 255, 0.1)',
+                        color: 'white',
+                      },
+                      '&.Mui-selected': {
+                        bgcolor: '#2c5282',
+                        color: 'white',
+                        '&:hover': {
+                          bgcolor: '#2c5282',
+                          color: 'white',
+                        },
+                        '& .MuiListItemIcon-root': {
+                          color: 'white',
+                        },
+                        '& .MuiListItemText-primary': {
+                          color: 'white',
+                        },
+                      },
+                    }}
+                  >
+                    <ListItemIcon sx={{ color: 'inherit', minWidth: 36 }}>
+                      {item.icon}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={item.label}
+                      primaryTypographyProps={{ fontSize: '14px', color: 'inherit' }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              ))}
+            </List>
+          </Box>
+
+          {/* 設定セクション */}
+          <Box sx={{ mb: 2 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                textTransform: 'uppercase',
+                opacity: 0.6,
+                color: 'white',
+                px: 1,
+                mb: 0.5,
+                display: 'block',
+                fontSize: '12px',
+              }}
+            >
+              設定
+            </Typography>
+            <List disablePadding>
+              {settingsItems.map((item) => (
+                <ListItem key={item.id} disablePadding sx={{ mb: 0.5 }}>
+                  <ListItemButton
+                    onClick={() => navigate(item.href)}
+                    sx={{
+                      borderRadius: 1,
+                      color: 'rgba(255, 255, 255, 0.8)',
+                      fontSize: '14px',
+                      py: 1,
+                      px: 2,
+                      '&:hover': {
+                        bgcolor: 'rgba(255, 255, 255, 0.1)',
+                        color: 'white',
+                        '& .MuiListItemIcon-root': {
+                          color: 'white',
+                        },
+                        '& .MuiListItemText-primary': {
+                          color: 'white',
+                        },
+                      },
+                    }}
+                  >
+                    <ListItemIcon sx={{ color: 'inherit', minWidth: 36 }}>
+                      {item.icon}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={item.label}
+                      primaryTypographyProps={{ fontSize: '14px', color: 'inherit' }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              ))}
+            </List>
+          </Box>
+
+          {/* その他セクション */}
+          <Box>
+            <Typography
+              variant="caption"
+              sx={{
+                textTransform: 'uppercase',
+                opacity: 0.6,
+                color: 'white',
+                px: 1,
+                mb: 0.5,
+                display: 'block',
+                fontSize: '12px',
+              }}
+            >
+              その他
+            </Typography>
+            <List disablePadding>
+              {otherItems.map((item) => (
+                <ListItem key={item.id} disablePadding sx={{ mb: 0.5 }}>
+                  <ListItemButton
+                    onClick={() => navigate(item.href)}
+                    sx={{
+                      borderRadius: 1,
+                      color: 'rgba(255, 255, 255, 0.8)',
+                      fontSize: '14px',
+                      py: 1,
+                      px: 2,
+                      '&:hover': {
+                        bgcolor: 'rgba(255, 255, 255, 0.1)',
+                        color: 'white',
+                        '& .MuiListItemIcon-root': {
+                          color: 'white',
+                        },
+                        '& .MuiListItemText-primary': {
+                          color: 'white',
+                        },
+                      },
+                    }}
+                  >
+                    <ListItemIcon sx={{ color: 'inherit', minWidth: 36 }}>
+                      {item.icon}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={item.label}
+                      primaryTypographyProps={{ fontSize: '14px', color: 'inherit' }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              ))}
+            </List>
+          </Box>
+        </Box>
+      </Drawer>
+
+      {/* Main Content */}
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          p: 4,
+          bgcolor: '#f5f7fa',
+          minHeight: '100vh',
+        }}
+      >
+        {/* Content Header */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 6 }}>
+          <Box>
+            <Typography variant="h4" fontWeight={500} color="text.primary">
+              管理ダッシュボード
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <IconButton
+              sx={{
+                bgcolor: 'transparent',
+                color: 'text.secondary',
+                '&:hover': { bgcolor: alpha(theme.palette.common.black, 0.05) },
+              }}
+            >
+              <NotificationsIcon />
+            </IconButton>
+            <IconButton
+              sx={{
+                bgcolor: 'transparent',
+                color: 'text.secondary',
+                '&:hover': { bgcolor: alpha(theme.palette.common.black, 0.05) },
+              }}
+            >
+              <SettingsIcon />
+            </IconButton>
+          </Box>
+        </Box>
+
+        {/* System Stats Grid */}
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: 3,
+            mb: 6,
+          }}
+        >
+          <StatCard
+            icon={<PeopleIcon sx={{ fontSize: 24 }} />}
+            iconColor={theme.palette.primary.main}
+            iconBgColor={alpha(theme.palette.primary.main, 0.1)}
+            label="総ユーザー数"
+            value="12"
+            unit="人"
+            footer="アクティブユーザー: 10人"
+          />
+          <StatCard
+            icon={<ForumIcon sx={{ fontSize: 24 }} />}
+            iconColor={theme.palette.success.main}
+            iconBgColor={alpha(theme.palette.success.main, 0.1)}
+            label="総会話数"
+            value="347"
+            unit="件"
+            footer="今週の新規会話: 28件"
+          />
+          <StatCard
+            icon={<ChatBubbleIcon sx={{ fontSize: 24 }} />}
+            iconColor={theme.palette.info.main}
+            iconBgColor={alpha(theme.palette.info.main, 0.1)}
+            label="総メッセージ数"
+            value="1,542"
+            unit="件"
+            footer="平均: 4.4メッセージ/会話"
+          />
+          <StatCard
+            icon={<ApiIcon sx={{ fontSize: 24 }} />}
+            iconColor={theme.palette.warning.main}
+            iconBgColor={alpha(theme.palette.warning.main, 0.1)}
+            label="Claude API使用量"
+            value="245K"
+            unit="トークン"
+            footer="今月の推定コスト: $8.50"
+          />
+        </Box>
+
+        {/* Navigation Cards Section */}
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="h5" fontWeight={500} sx={{ mb: 0.5 }}>
+            管理機能
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            各管理機能にアクセスできます
+          </Typography>
+        </Box>
+
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+            gap: 3,
+          }}
+        >
+          <NavCard
+            icon={<FolderIcon sx={{ fontSize: 28 }} />}
+            iconBgColor={alpha(theme.palette.primary.main, 0.1)}
+            iconColor={theme.palette.primary.main}
+            title="ナレッジベース管理"
+            description="システムRAG（専門知識）とユーザーRAG（個別データ）のアップロード・更新・削除を管理します。"
+            badge="D-005"
+            href="/admin/datasets"
+            onClick={() => navigate('/admin/datasets')}
+          />
+          <NavCard
+            icon={<HistoryIcon sx={{ fontSize: 28 }} />}
+            iconBgColor={alpha(theme.palette.warning.main, 0.1)}
+            iconColor={theme.palette.warning.main}
+            title="会話履歴管理"
+            description="全クライアントの会話履歴を確認し、危機フラグや引用元情報をチェックできます。"
+            badge="D-006"
+            href="/admin/logs"
+            onClick={() => navigate('/admin/logs')}
+          />
+          <NavCard
+            icon={<TuneIcon sx={{ fontSize: 28 }} />}
+            iconBgColor={alpha(theme.palette.info.main, 0.1)}
+            iconColor={theme.palette.info.main}
+            title="プロンプト編集"
+            description="AIの応答スタイル、ペルソナ、指示を調整し、A/Bテストやプレビューを実行できます。"
+            badge="D-007"
+            href="/admin/app/config"
+            onClick={() => navigate('/admin/app/config')}
+          />
+          <NavCard
+            icon={<PeopleIcon sx={{ fontSize: 28 }} />}
+            iconBgColor={alpha(theme.palette.success.main, 0.1)}
+            iconColor={theme.palette.success.main}
+            title="ユーザー管理"
+            description="クライアントの追加・削除・情報編集、アクセストークンの発行を管理できます。"
+            badge="D-009"
+            href="/admin/users"
+            onClick={() => navigate('/admin/users')}
+          />
+        </Box>
       </Box>
-    </MainLayout>
+    </Box>
   );
 };

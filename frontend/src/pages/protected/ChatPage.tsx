@@ -16,11 +16,20 @@ import {
   Chip,
   Stack,
   Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import HistoryIcon from '@mui/icons-material/History';
 import CloseIcon from '@mui/icons-material/Close';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import HubIcon from '@mui/icons-material/Hub';
 import PsychologyIcon from '@mui/icons-material/Psychology';
 import SchoolIcon from '@mui/icons-material/School';
@@ -42,6 +51,8 @@ import TimelineIcon from '@mui/icons-material/Timeline';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import ChatIcon from '@mui/icons-material/Chat';
+import WarningIcon from '@mui/icons-material/Warning';
 
 import { useAuth } from '@/contexts/AuthContext';
 import type { Message, Conversation, Citation, AIMode } from '@/types';
@@ -52,6 +63,7 @@ import {
   createConversation,
   groupConversationsByDate,
 } from '@/services/api/chatService';
+import { generateConversationSummary } from '@/services/api/conversationSummaryService';
 
 // --------------------------------------------
 // モード定義
@@ -160,6 +172,14 @@ export const ChatPage = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentMode, setCurrentMode] = useState<AIMode>('problem-solving');
   const [activeNav, setActiveNav] = useState('学習');
+  const [summaryModalOpen, setSummaryModalOpen] = useState(false);
+  const [currentSummary, setCurrentSummary] = useState<{
+    topics: string[];
+    problems: string[];
+    advice: string[];
+    insights: string[];
+    next_steps: string[];
+  } | null>(null);
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -294,6 +314,54 @@ export const ChatPage = () => {
   };
 
   // --------------------------------------------
+  // 会話を終了（要約生成）
+  // --------------------------------------------
+
+  const handleEndConversation = async () => {
+    if (!currentSessionId || messages.length === 0 || !user) {
+      alert('終了する会話がありません。');
+      return;
+    }
+
+    try {
+      console.log('会話要約を生成中...', { sessionId: currentSessionId, messageCount: messages.length });
+
+      // 会話要約を生成
+      const response = await generateConversationSummary({
+        session_id: currentSessionId,
+        user_id: user.user_id,
+        messages,
+      });
+
+      if (response.success) {
+        console.log('生成された要約:', response.summary);
+
+        // 要約をstateに保存してモーダル表示
+        setCurrentSummary({
+          topics: response.summary.topics,
+          problems: response.summary.problems,
+          advice: response.summary.advice,
+          insights: response.summary.insights,
+          next_steps: response.summary.next_steps,
+        });
+        setSummaryModalOpen(true);
+      } else {
+        alert(`会話要約の生成に失敗しました: ${response.message}`);
+      }
+    } catch (error) {
+      console.error('会話終了エラー:', error);
+      alert('会話の終了に失敗しました。もう一度お試しください。');
+    }
+  };
+
+  const handleConfirmEndConversation = async () => {
+    // モーダルを閉じて新規会話を開始
+    setSummaryModalOpen(false);
+    setCurrentSummary(null);
+    await handleNewConversation();
+  };
+
+  // --------------------------------------------
   // 会話履歴から読み込み
   // --------------------------------------------
 
@@ -318,9 +386,17 @@ export const ChatPage = () => {
   // モード変更ハンドラー
   // --------------------------------------------
 
-  const handleModeChange = (mode: AIMode) => {
+  const handleModeChange = async (mode: AIMode) => {
+    if (mode === currentMode) return; // 同じモードなら何もしない
+
+    console.log('モード変更:', currentMode, '->', mode);
     setCurrentMode(mode);
-    console.log('Selected mode:', mode);
+
+    // 会話中の場合は新規会話を開始
+    if (messages.length > 0 && currentSessionId) {
+      console.log('会話中のため、新規会話を開始します');
+      await handleNewConversation();
+    }
   };
 
   // --------------------------------------------
@@ -393,13 +469,14 @@ export const ChatPage = () => {
         </Box>
 
         {/* 右側: 新規会話 + 会話履歴ボタン */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <IconButton
             onClick={handleNewConversation}
             sx={{
               color: 'text.secondary',
               '&:hover': { bgcolor: 'grey.100' },
             }}
+            title="新しい会話を開始"
           >
             <AddCircleOutlineIcon />
           </IconButton>
@@ -409,6 +486,7 @@ export const ChatPage = () => {
               color: 'text.secondary',
               '&:hover': { bgcolor: 'grey.100' },
             }}
+            title="会話履歴を表示"
           >
             <HistoryIcon />
           </IconButton>
@@ -446,6 +524,7 @@ export const ChatPage = () => {
               <Button
                 key={mode.id}
                 onClick={() => handleModeChange(mode.id)}
+                disabled={isTyping}
                 variant={currentMode === mode.id ? 'contained' : 'outlined'}
                 startIcon={<Icon />}
                 sx={{
@@ -495,7 +574,7 @@ export const ChatPage = () => {
           flexDirection: 'column',
           gap: 2,
           bgcolor: 'grey.50',
-          pb: '150px',
+          pb: messages.length > 0 ? '230px' : '150px', // メッセージがある時は会話終了ボタン分のスペース確保
           '&::-webkit-scrollbar': {
             width: '6px',
           },
@@ -594,7 +673,7 @@ export const ChatPage = () => {
                     sx={{
                       p: '12px 16px',
                       bgcolor: message.role === 'user' ? 'primary.main' : 'white',
-                      color: message.role === 'user' ? 'white' : 'text.primary',
+                      color: message.role === 'user' ? '#ffffff' : 'text.primary',
                       borderRadius: message.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
                       wordWrap: 'break-word',
                       fontSize: 15,
@@ -607,6 +686,7 @@ export const ChatPage = () => {
                         wordBreak: 'break-word',
                         fontSize: 15,
                         lineHeight: 1.5,
+                        color: message.role === 'user' ? '#ffffff' : 'inherit',
                       }}
                     >
                       {message.content}
@@ -729,6 +809,51 @@ export const ChatPage = () => {
           </>
         )}
       </Box>
+
+      {/* 会話終了ボタン（目立つ大きなボタン） */}
+      {messages.length > 0 && currentSessionId && (
+        <Box
+          sx={{
+            position: 'fixed',
+            bottom: '150px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: '100%',
+            maxWidth: '600px',
+            px: 2,
+            zIndex: 40,
+          }}
+        >
+          <Button
+            fullWidth
+            variant="contained"
+            size="large"
+            startIcon={<CheckCircleOutlineIcon sx={{ fontSize: 24 }} />}
+            onClick={handleEndConversation}
+            sx={{
+              bgcolor: 'success.main',
+              color: 'white',
+              height: 56,
+              fontSize: 16,
+              fontWeight: 600,
+              borderRadius: 2,
+              textTransform: 'none',
+              boxShadow: 3,
+              '&:hover': {
+                bgcolor: 'success.dark',
+                boxShadow: 4,
+                transform: 'translateY(-2px)',
+              },
+              '&:active': {
+                transform: 'translateY(0)',
+              },
+              transition: 'all 0.2s',
+            }}
+          >
+            会話を終了して要約を生成
+          </Button>
+        </Box>
+      )}
 
       {/* 入力エリア（fixed bottom、ボトムナビゲーションの上） */}
       <Box
@@ -975,6 +1100,177 @@ export const ChatPage = () => {
           );
         })}
       </Box>
+
+      {/* 要約モーダル */}
+      <Dialog
+        open={summaryModalOpen}
+        onClose={() => setSummaryModalOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            maxHeight: '80vh',
+          },
+        }}
+      >
+        <DialogTitle sx={{ pb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <CheckCircleIcon sx={{ fontSize: 32, color: 'success.main' }} />
+            <Typography variant="h6" fontWeight={600}>
+              会話要約
+            </Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent dividers>
+          {currentSummary && (
+            <Stack spacing={3}>
+              {/* トピック */}
+              {currentSummary.topics.length > 0 && (
+                <Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                    <ChatIcon sx={{ fontSize: 20, color: 'primary.main' }} />
+                    <Typography variant="subtitle1" fontWeight={600}>
+                      主なトピック
+                    </Typography>
+                  </Box>
+                  <Stack spacing={1}>
+                    {currentSummary.topics.map((topic, index) => (
+                      <Chip
+                        key={index}
+                        label={topic}
+                        size="medium"
+                        sx={{ justifyContent: 'flex-start' }}
+                      />
+                    ))}
+                  </Stack>
+                </Box>
+              )}
+
+              {/* 問題・課題 */}
+              {currentSummary.problems.length > 0 && (
+                <Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                    <WarningIcon sx={{ fontSize: 20, color: 'warning.main' }} />
+                    <Typography variant="subtitle1" fontWeight={600}>
+                      問題・課題
+                    </Typography>
+                  </Box>
+                  <List dense>
+                    {currentSummary.problems.map((problem, index) => (
+                      <ListItem key={index} sx={{ pl: 0 }}>
+                        <ListItemText
+                          primary={problem}
+                          sx={{
+                            bgcolor: 'grey.50',
+                            borderRadius: 1,
+                            p: 1.5,
+                          }}
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                </Box>
+              )}
+
+              {/* アドバイス */}
+              {currentSummary.advice.length > 0 && (
+                <Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                    <LightbulbIcon sx={{ fontSize: 20, color: 'info.main' }} />
+                    <Typography variant="subtitle1" fontWeight={600}>
+                      提供されたアドバイス
+                    </Typography>
+                  </Box>
+                  <List dense>
+                    {currentSummary.advice.map((item, index) => (
+                      <ListItem key={index} sx={{ pl: 0 }}>
+                        <ListItemText
+                          primary={item}
+                          sx={{
+                            bgcolor: 'grey.50',
+                            borderRadius: 1,
+                            p: 1.5,
+                          }}
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                </Box>
+              )}
+
+              {/* 気づき */}
+              {currentSummary.insights.length > 0 && (
+                <Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                    <AssignmentIcon sx={{ fontSize: 20, color: 'secondary.main' }} />
+                    <Typography variant="subtitle1" fontWeight={600}>
+                      気づき
+                    </Typography>
+                  </Box>
+                  <List dense>
+                    {currentSummary.insights.map((item, index) => (
+                      <ListItem key={index} sx={{ pl: 0 }}>
+                        <ListItemText
+                          primary={item}
+                          sx={{
+                            bgcolor: 'grey.50',
+                            borderRadius: 1,
+                            p: 1.5,
+                          }}
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                </Box>
+              )}
+
+              {/* 次のステップ */}
+              {currentSummary.next_steps.length > 0 && (
+                <Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                    <TrendingUpIcon sx={{ fontSize: 20, color: 'success.main' }} />
+                    <Typography variant="subtitle1" fontWeight={600}>
+                      次のステップ
+                    </Typography>
+                  </Box>
+                  <List dense>
+                    {currentSummary.next_steps.map((item, index) => (
+                      <ListItem key={index} sx={{ pl: 0 }}>
+                        <ListItemText
+                          primary={item}
+                          sx={{
+                            bgcolor: 'grey.50',
+                            borderRadius: 1,
+                            p: 1.5,
+                          }}
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                </Box>
+              )}
+            </Stack>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 2, gap: 1 }}>
+          <Button
+            onClick={() => setSummaryModalOpen(false)}
+            variant="outlined"
+            sx={{ flex: 1 }}
+          >
+            キャンセル
+          </Button>
+          <Button
+            onClick={handleConfirmEndConversation}
+            variant="contained"
+            color="primary"
+            sx={{ flex: 1 }}
+          >
+            会話を終了
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

@@ -5,8 +5,8 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoginPage } from '@/pages/public/LoginPage';
-import { ChatPage } from '@/pages/ChatPage/index';
-import { ConversationHistoryPage } from '@/pages/ConversationHistoryPage/index';
+import { ChatPage } from '@/pages/protected/ChatPage';
+import { ConversationSummariesPage } from '@/pages/protected/ConversationSummariesPage';
 import { AdminDashboardPage } from '@/pages/AdminDashboardPage/index';
 import { Box, CircularProgress } from '@mui/material';
 import type { ReactNode } from 'react';
@@ -74,10 +74,10 @@ function App() {
       />
 
       <Route
-        path="/logs"
+        path="/summaries"
         element={
           <ProtectedRoute>
-            <ConversationHistoryPage />
+            <ConversationSummariesPage />
           </ProtectedRoute>
         }
       />

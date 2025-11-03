@@ -520,6 +520,50 @@
       font-size: 24px;
     }
 
+    /* End Conversation Button */
+    .end-conversation-container {
+      padding: var(--spacing-md) var(--spacing-md) var(--spacing-sm) var(--spacing-md);
+      max-width: 600px;
+      margin: 0 auto;
+      display: none; /* 初期状態では非表示 */
+    }
+
+    .end-conversation-container.visible {
+      display: block;
+    }
+
+    .end-conversation-button {
+      width: 100%;
+      height: 48px;
+      background: var(--success);
+      color: white;
+      border: none;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--spacing-sm);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      font-size: var(--font-md);
+      font-weight: 500;
+      box-shadow: var(--shadow-md);
+    }
+
+    .end-conversation-button:hover {
+      background: var(--success-dark);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .end-conversation-button:active {
+      transform: translateY(0);
+    }
+
+    .end-conversation-button .material-icons {
+      font-size: 24px;
+    }
+
     /* Bottom Navigation */
     .bottom-nav {
       position: fixed;
@@ -682,6 +726,153 @@
       display: block;
     }
 
+    /* Summary Modal */
+    .summary-modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: var(--bg-primary);
+      border-radius: var(--radius-lg);
+      padding: var(--spacing-2xl);
+      max-width: 90%;
+      width: 600px;
+      max-height: 80vh;
+      overflow-y: auto;
+      z-index: 200;
+      box-shadow: var(--shadow-lg);
+      display: none;
+    }
+
+    .summary-modal.active {
+      display: block;
+      animation: modalSlideIn 0.3s ease-out;
+    }
+
+    @keyframes modalSlideIn {
+      from {
+        opacity: 0;
+        transform: translate(-50%, -40%);
+      }
+      to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+      }
+    }
+
+    .summary-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--spacing-lg);
+      padding-bottom: var(--spacing-md);
+      border-bottom: 2px solid var(--border-color);
+    }
+
+    .summary-modal-title {
+      font-size: var(--font-2xl);
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+    }
+
+    .summary-modal-title .material-icons {
+      font-size: 32px;
+      color: var(--success);
+    }
+
+    .summary-modal-close {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-secondary);
+      padding: var(--spacing-xs);
+      border-radius: var(--radius-md);
+      transition: all var(--transition-fast);
+    }
+
+    .summary-modal-close:hover {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+    }
+
+    .summary-section {
+      margin-bottom: var(--spacing-lg);
+    }
+
+    .summary-section-title {
+      font-size: var(--font-lg);
+      font-weight: 600;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      margin-bottom: var(--spacing-md);
+    }
+
+    .summary-section-title .material-icons {
+      font-size: 20px;
+      color: var(--primary);
+    }
+
+    .summary-items {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .summary-item {
+      padding: var(--spacing-sm) var(--spacing-md);
+      background: var(--bg-secondary);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--spacing-sm);
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .summary-modal-actions {
+      display: flex;
+      gap: var(--spacing-md);
+      margin-top: var(--spacing-2xl);
+      padding-top: var(--spacing-lg);
+      border-top: 1px solid var(--border-color);
+    }
+
+    .summary-modal-button {
+      flex: 1;
+      height: 48px;
+      border: none;
+      border-radius: var(--radius-md);
+      font-size: var(--font-md);
+      font-weight: 500;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--spacing-sm);
+    }
+
+    .summary-modal-button.primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .summary-modal-button.primary:hover {
+      background: var(--primary-dark);
+    }
+
+    .summary-modal-button.secondary {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+
+    .summary-modal-button.secondary:hover {
+      background: var(--border-dark);
+    }
+
     /* Scrollbar Styles */
     .chat-history::-webkit-scrollbar {
       width: 6px;
@@ -797,6 +988,14 @@
       </div>
     </div>
 
+    <!-- End Conversation Button -->
+    <div class="end-conversation-container" id="end-conversation-container">
+      <button class="end-conversation-button" onclick="endConversation()">
+        <span class="material-icons">check_circle</span>
+        <span>会話を終了して要約を生成</span>
+      </button>
+    </div>
+
     <!-- Message Input Area -->
     <div class="input-area">
       <input type="text" id="message-input" placeholder="メッセージを入力..." />
@@ -888,6 +1087,80 @@
 
   <!-- Overlay -->
   <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+  <!-- Summary Modal -->
+  <div class="summary-modal" id="summary-modal">
+    <div class="summary-modal-header">
+      <div class="summary-modal-title">
+        <span class="material-icons">check_circle</span>
+        会話要約
+      </div>
+      <button class="summary-modal-close" onclick="closeSummaryModal()">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+
+    <div class="summary-modal-content">
+      <!-- トピック -->
+      <div class="summary-section">
+        <div class="summary-section-title">
+          <span class="material-icons">chat</span>
+          主なトピック
+        </div>
+        <ul class="summary-items" id="summary-topics"></ul>
+      </div>
+
+      <!-- 問題・課題 -->
+      <div class="summary-section">
+        <div class="summary-section-title">
+          <span class="material-icons">warning</span>
+          問題・課題
+        </div>
+        <ul class="summary-items" id="summary-problems"></ul>
+      </div>
+
+      <!-- アドバイス -->
+      <div class="summary-section">
+        <div class="summary-section-title">
+          <span class="material-icons">lightbulb</span>
+          提供されたアドバイス
+        </div>
+        <ul class="summary-items" id="summary-advice"></ul>
+      </div>
+
+      <!-- 気づき -->
+      <div class="summary-section">
+        <div class="summary-section-title">
+          <span class="material-icons">assignment</span>
+          気づき
+        </div>
+        <ul class="summary-items" id="summary-insights"></ul>
+      </div>
+
+      <!-- 次のステップ -->
+      <div class="summary-section">
+        <div class="summary-section-title">
+          <span class="material-icons">trending_up</span>
+          次のステップ
+        </div>
+        <ul class="summary-items" id="summary-next-steps"></ul>
+      </div>
+    </div>
+
+    <div class="summary-modal-actions">
+      <button class="summary-modal-button secondary" onclick="closeSummaryModal()">
+        <span class="material-icons">close</span>
+        キャンセル
+      </button>
+      <button class="summary-modal-button primary" onclick="confirmEndConversation()">
+        <span class="material-icons">check_circle</span>
+        会話を終了
+      </button>
+    </div>
+  </div>
+
+  <!-- Overlay for Summary Modal -->
+  <div class="overlay" id="summary-overlay" onclick="closeSummaryModal()"></div>
 
   <script>
     // State Management
@@ -1097,6 +1370,9 @@
 
       // Save to conversation
       conversationMessages.push({ role, content, time });
+
+      // Update end conversation button visibility
+      updateEndConversationButton();
     }
 
     // Show Typing Indicator
@@ -1268,6 +1544,115 @@
       const chatHistory = document.getElementById('chat-history');
       chatHistory.scrollTop = chatHistory.scrollHeight;
     });
+
+    // Update End Conversation Button Visibility
+    function updateEndConversationButton() {
+      const container = document.getElementById('end-conversation-container');
+      if (conversationMessages.length > 0) {
+        container.classList.add('visible');
+      } else {
+        container.classList.remove('visible');
+      }
+    }
+
+    // End Conversation - Generate Summary
+    function endConversation() {
+      if (conversationMessages.length === 0) {
+        alert('会話がまだありません。');
+        return;
+      }
+
+      // 簡易的な要約生成（モック実装）
+      const userMessages = conversationMessages.filter(m => m.role === 'user');
+      const aiMessages = conversationMessages.filter(m => m.role === 'assistant');
+
+      // トピック抽出
+      const topics = extractTopics(userMessages);
+      const problems = extractProblems(userMessages);
+      const advice = extractAdvice(aiMessages);
+      const insights = extractInsights(userMessages);
+      const nextSteps = extractNextSteps(aiMessages);
+
+      // モーダルに表示
+      displaySummary({ topics, problems, advice, insights, nextSteps });
+
+      // モーダルとオーバーレイを表示
+      document.getElementById('summary-modal').classList.add('active');
+      document.getElementById('summary-overlay').classList.add('active');
+    }
+
+    // 要約抽出関数（簡易実装）
+    function extractTopics(messages) {
+      const keywords = ['目標', 'キャリア', '人間関係', '転職', 'スキル', '学習', '計画'];
+      const found = new Set();
+      messages.forEach(m => {
+        keywords.forEach(kw => {
+          if (m.content.includes(kw)) found.add(kw);
+        });
+      });
+      return Array.from(found).slice(0, 5);
+    }
+
+    function extractProblems(messages) {
+      const problemKeywords = ['困っ', '悩み', '問題', '課題', 'うまくいかない'];
+      return messages
+        .filter(m => problemKeywords.some(kw => m.content.includes(kw)))
+        .map(m => m.content.replace(/<[^>]*>/g, '').substring(0, 100))
+        .slice(0, 3);
+    }
+
+    function extractAdvice(messages) {
+      return messages
+        .map(m => m.content.replace(/<[^>]*>/g, '').substring(0, 150))
+        .slice(0, 3);
+    }
+
+    function extractInsights(messages) {
+      const insightKeywords = ['わかりました', '理解', '納得', '気づき', 'なるほど'];
+      return messages
+        .filter(m => insightKeywords.some(kw => m.content.includes(kw)))
+        .map(m => m.content.replace(/<[^>]*>/g, '').substring(0, 100))
+        .slice(0, 3);
+    }
+
+    function extractNextSteps(messages) {
+      const nextStepKeywords = ['次', 'これから', '明日', '今週', '取り組'];
+      return messages
+        .filter(m => nextStepKeywords.some(kw => m.content.includes(kw)))
+        .map(m => m.content.replace(/<[^>]*>/g, '').substring(0, 100))
+        .slice(0, 3);
+    }
+
+    // Display Summary in Modal
+    function displaySummary(summary) {
+      const displayList = (elementId, items) => {
+        const element = document.getElementById(elementId);
+        element.innerHTML = items.length > 0
+          ? items.map(item => `<li class="summary-item">${item}</li>`).join('')
+          : '<li class="summary-item">該当する内容はありませんでした</li>';
+      };
+
+      displayList('summary-topics', summary.topics);
+      displayList('summary-problems', summary.problems);
+      displayList('summary-advice', summary.advice);
+      displayList('summary-insights', summary.insights);
+      displayList('summary-next-steps', summary.nextSteps);
+    }
+
+    // Close Summary Modal
+    function closeSummaryModal() {
+      document.getElementById('summary-modal').classList.remove('active');
+      document.getElementById('summary-overlay').classList.remove('active');
+    }
+
+    // Confirm End Conversation
+    function confirmEndConversation() {
+      alert('会話が終了しました。要約がユーザーRAGに保存されました。');
+      closeSummaryModal();
+
+      // 新規会話を開始
+      startNewChat();
+    }
   </script>
 
 </body>

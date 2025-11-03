@@ -98,6 +98,39 @@ export interface ChatMessageResponse {
 }
 
 // --------------------------------------------
+// 会話要約関連
+// --------------------------------------------
+
+export interface ConversationSummary {
+  summary_id: string; // UUID
+  session_id: string;
+  user_id: string;
+  topics: string[]; // 主なトピック
+  problems: string[]; // 問題・課題
+  advice: string[]; // 提供したアドバイス
+  insights: string[]; // クライアントの気づき
+  next_steps: string[]; // 次のステップ
+  mentor_notes?: string; // メンターメモ（任意）
+  crisis_flags?: string[]; // 危機フラグ（検出されたキーワード等）
+  created_at: string; // ISO 8601
+  updated_at?: string; // ISO 8601
+}
+
+// 会話要約生成リクエスト
+export interface GenerateSummaryRequest {
+  session_id: string;
+  user_id: string;
+  messages: Message[];
+}
+
+// 会話要約生成レスポンス
+export interface GenerateSummaryResponse {
+  summary: ConversationSummary;
+  success: boolean;
+  message?: string;
+}
+
+// --------------------------------------------
 // UI関連（ChatPage）
 // --------------------------------------------
 
